@@ -1,1 +1,47 @@
 @import "tailwindcss";
+@import "@fontsource/inter";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  
+  /* Definiujemy semantyczne kolory, aby używać ich jako klas w Tailwind (np. bg-theme-bg, text-theme-primary) */
+  --color-theme-bg: var(--bg-color);
+  --color-theme-surface: var(--surface-color);
+  --color-theme-text: var(--text-color);
+  --color-theme-text-muted: var(--text-muted-color);
+  --color-theme-primary: var(--primary-color);
+  --color-theme-primary-hover: var(--primary-hover-color);
+  --color-theme-border: var(--border-color);
+}
+
+@layer base {
+  :root {
+    /* Light Theme (Domyślny) */
+    --bg-color: var(--color-slate-100);
+    --surface-color: var(--color-white);
+    --text-color: var(--color-slate-900);
+    --text-muted-color: var(--color-slate-500);
+    --primary-color: var(--color-teal-500);
+    --primary-hover-color: var(--color-teal-600);
+    --border-color: var(--color-slate-200);
+  }
+
+  .dark {
+    /* Dark Theme */
+    --bg-color: var(--color-slate-900);
+    --surface-color: var(--color-slate-800);
+    --text-color: var(--color-slate-50);
+    --text-muted-color: var(--color-slate-400);
+    --primary-color: var(--color-teal-400);
+    --primary-hover-color: var(--color-teal-300);
+    --border-color: var(--color-slate-700);
+  }
+
+  body {
+    background-color: var(--color-theme-bg);
+    color: var(--color-theme-text);
+    font-family: var(--font-sans);
+    /* Płynne przejścia przy zmianie motywu */
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}

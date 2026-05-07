@@ -1,11 +1,29 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import Dashboard from '../components/Dashboard';
+import '../styles/global.css';
+import { createClient } from '@supabase/supabase-js';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Inicjalizacja Supabase po stronie serwera (SSR)
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Pobieranie danych z bazy (sortujemy po stopie zwrotu za 1 rok malejąco)
+const { data: etfs, error } = await supabase
+  .from('etfs')
+  .select('*')
+  .order('return_1y', { ascending: false })
+  .limit(20);
+
+if (error) {
+  console.error('Błąd pobierania danych z Supabase:', error);
+}
+
+const initialEtfs = etfs || [];
 ---
 
 <Layout>
-	<Welcome />
+	<!-- Przekazujemy pobrane dane do interaktywnego komponentu React -->
+	<Dashboard initialEtfs={initialEtfs} client:load />
 </Layout>
