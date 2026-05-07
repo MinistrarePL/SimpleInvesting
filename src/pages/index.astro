@@ -5,9 +5,15 @@ import '../styles/global.css';
 import { createClient } from '@supabase/supabase-js';
 
 // Inicjalizacja Supabase po stronie serwera (SSR)
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Astro w trybie SSR na Netlify czasami potrzebuje process.env zamiast import.meta.env
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Brak kluczy Supabase w zmiennych środowiskowych!');
+}
+
+const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 // Pobieranie danych z bazy (sortujemy po stopie zwrotu za 1 rok malejąco)
 const { data: etfs, error } = await supabase
