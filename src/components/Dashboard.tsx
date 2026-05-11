@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Moon, Sun, Globe, Search, Plus, Loader2 } from 'lucide-react';
+import { Moon, Sun, Globe, Search, Plus, Loader2, User, LogOut } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
+import EtfSidePanel from './EtfSidePanel';
+import AuthModal, { supabase } from './AuthModal';
 
 // Typy danych z Supabase
 interface ETF {
@@ -29,6 +31,39 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
   // Stan dla wyszukiwarki (filtrowanie tabeli)
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Stan dla bocznego panelu
+  const [selectedEtf, setSelectedEtf] = useState<ETF | null>(null);
+
+  // Stan autoryzacji
+  const [session, setSession] = useState<any>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'register' | 'reset' | 'update_password'>('login');
+
+  // Nasłuchiwanie na zmiany stanu logowania w Supabase
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      
+      // Automatyczne wykrycie, że użytkownik kliknął w link do resetu hasła
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthView('update_password');
+        setIsAuthModalOpen(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   // Filtrowanie ETF-ów na podstawie wpisanego tekstu
   const filteredEtfs = etfs.filter((etf) => {
@@ -105,8 +140,9 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             />
           </div>
 
-          {/* Kontrolki (Język i Motyw) */}
-          <div className="flex items-center gap-4">
+          {/* Kontrolki (Język, Motyw, Logowanie) */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
             <button 
               onClick={toggleLanguage}
               className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-sm font-medium"
@@ -123,6 +159,31 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             >
               {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
+
+            <div className="w-px h-6 bg-theme-border mx-1 hidden sm:block"></div>
+
+            {/* Przycisk Logowania / Profilu (Skrajnie po prawej) */}
+            {session ? (
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-base font-medium text-theme-text-muted hover:text-red-500"
+                title={t('auth.logout')}
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('auth.logout')}</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => {
+                  setAuthView('login');
+                  setIsAuthModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-base font-bold shadow-sm"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">{t('auth.loginRegisterBtn')}</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -183,7 +244,11 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                   </tr>
                 ) : (
                   filteredEtfs.map((etf) => (
-                    <tr key={etf.id} className="hover:bg-theme-bg/50 transition-colors group">
+                    <tr 
+                      key={etf.id} 
+                      onClick={() => setSelectedEtf(etf)}
+                      className="hover:bg-theme-bg/50 transition-colors group cursor-pointer"
+                    >
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
                           <span className="font-bold text-theme-text">{etf.ticker}</span>
@@ -220,6 +285,20 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           </div>
         </div>
       </main>
+
+      {/* Boczny panel ze szczegółami ETF */}
+      <EtfSidePanel 
+        isOpen={!!selectedEtf} 
+        onClose={() => setSelectedEtf(null)} 
+        etf={selectedEtf} 
+      />
+
+      {/* Modal logowania / rejestracji */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        initialView={authView}
+      />
     </div>
   );
 }

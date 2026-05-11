@@ -46,12 +46,12 @@
     --surface-color: var(--color-slate-800);
     --text-color: var(--color-slate-50);
     --text-muted-color: var(--color-slate-400);
-    --primary-color: var(--color-teal-400);
-    --primary-hover-color: var(--color-teal-300);
+    --primary-color: var(--color-teal-500);
+    --primary-hover-color: var(--color-teal-400);
     --border-color: var(--color-slate-700);
     
     /* Komponenty - Dark */
-    --badge-bg: color-mix(in srgb, var(--color-teal-400) 10%, transparent);
+    --badge-bg: color-mix(in srgb, var(--color-teal-500) 15%, transparent);
     --badge-text: var(--color-teal-400);
     --badge-border: transparent;
     --return-pos: var(--color-green-500);
