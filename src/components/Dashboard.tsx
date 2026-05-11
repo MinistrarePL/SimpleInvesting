@@ -61,8 +61,15 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     const isPositive = val > 0;
     const isNegative = val < 0;
     
+    // Używamy ciemniejszych odcieni zieleni i czerwieni dla lepszego kontrastu w jasnym motywie
+    const colorClass = isPositive 
+      ? 'text-green-600 dark:text-green-500' 
+      : isNegative 
+        ? 'text-red-600 dark:text-red-500' 
+        : 'text-theme-text';
+    
     return (
-      <span className={`font-medium ${isPositive ? 'text-green-500' : isNegative ? 'text-red-500' : 'text-theme-text'}`}>
+      <span className={`font-medium ${colorClass}`}>
         {val > 0 ? '+' : ''}{val}%
       </span>
     );
@@ -154,7 +161,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-theme-primary/10 text-theme-primary">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-theme-primary/15 text-teal-800 dark:text-theme-primary border border-theme-primary/20">
                           {etf.category || 'N/A'}
                         </span>
                       </td>
