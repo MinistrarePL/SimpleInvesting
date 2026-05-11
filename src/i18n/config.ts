@@ -18,6 +18,9 @@ const resources = {
         y1: '1 Rok',
         noData: 'Brak danych',
       },
+      search: {
+        placeholder: 'Filtruj tabelę po nazwie, symbolu lub kategorii...',
+      },
       theme: {
         light: 'Jasny motyw',
         dark: 'Ciemny motyw',
@@ -39,6 +42,9 @@ const resources = {
         q1: '1 Quarter',
         y1: '1 Year',
         noData: 'No data',
+      },
+      search: {
+        placeholder: 'Filter table by name, symbol, or category...',
       },
       theme: {
         light: 'Light theme',

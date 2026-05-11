@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Moon, Sun, Globe } from 'lucide-react';
+import { Moon, Sun, Globe, Search, Plus, Loader2 } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 
 // Typy danych z Supabase
@@ -23,6 +23,22 @@ interface DashboardProps {
 export default function Dashboard({ initialEtfs }: DashboardProps) {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  // Stan dla ETF-ów (pozwala na dodawanie nowych do tabeli bez odświeżania)
+  const [etfs, setEtfs] = useState<ETF[]>(initialEtfs);
+
+  // Stan dla wyszukiwarki (filtrowanie tabeli)
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filtrowanie ETF-ów na podstawie wpisanego tekstu
+  const filteredEtfs = etfs.filter((etf) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      etf.ticker.toLowerCase().includes(query) ||
+      etf.name.toLowerCase().includes(query) ||
+      (etf.category && etf.category.toLowerCase().includes(query))
+    );
+  });
 
   // Inicjalizacja motywu na podstawie localStorage lub preferencji systemowych
   useEffect(() => {
@@ -113,6 +129,23 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
       {/* Główna zawartość - Tabela */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Wyszukiwarka */}
+        <div className="mb-6 relative">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-theme-text-muted" />
+            </div>
+            <input
+              type="text"
+              className="block w-full pl-10 pr-3 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-text-muted focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary sm:text-sm transition-colors"
+              placeholder={t('search.placeholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -142,14 +175,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border">
-                {initialEtfs.length === 0 ? (
+                {filteredEtfs.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-theme-text-muted">
                       {t('table.noData')}
                     </td>
                   </tr>
                 ) : (
-                  initialEtfs.map((etf) => (
+                  filteredEtfs.map((etf) => (
                     <tr key={etf.id} className="hover:bg-theme-bg/50 transition-colors group">
                       <td className="py-4 px-6">
                         <div className="flex flex-col">
