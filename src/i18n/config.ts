@@ -57,6 +57,11 @@ const resources = {
         successUpdate: 'Hasło zostało pomyślnie zaktualizowane!',
         orContinueWith: 'lub kontynuuj za pomocą',
         google: 'Google',
+        legalPrefix: 'Akceptuję ',
+        termsLink: 'regulamin serwisu',
+        legalMiddle: ' i ',
+        privacyLink: 'politykę prywatności',
+        mustAcceptLegal: 'Aby założyć konto, musisz zaakceptować regulamin i politykę prywatności.',
       }
     }
   },
@@ -115,19 +120,33 @@ const resources = {
         successUpdate: 'Password has been successfully updated!',
         orContinueWith: 'or continue with',
         google: 'Google',
+        legalPrefix: 'I accept the ',
+        termsLink: 'terms of service',
+        legalMiddle: ' and the ',
+        privacyLink: 'privacy policy',
+        mustAcceptLegal: 'You must accept the terms of service and privacy policy to create an account.',
       }
     }
   }
 };
 
+const initialLang = (() => {
+  if (typeof window === 'undefined') return 'pl';
+  try {
+    const stored = localStorage.getItem('si.lang');
+    if (stored === 'pl' || stored === 'en') return stored;
+  } catch (e) {}
+  return 'pl';
+})();
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: 'pl', // Domyślny język
+    lng: initialLang,
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false // React sam chroni przed XSS
+      escapeValue: false
     }
   });
 

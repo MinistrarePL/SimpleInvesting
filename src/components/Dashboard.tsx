@@ -104,6 +104,8 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const toggleLanguage = () => {
     const newLang = i18n.language === 'pl' ? 'en' : 'pl';
     i18n.changeLanguage(newLang);
+    try { localStorage.setItem('si.lang', newLang); } catch (e) {}
+    window.dispatchEvent(new CustomEvent('si:lang-change', { detail: newLang }));
   };
 
   // Funkcja pomocnicza do formatowania stóp zwrotu z kolorami

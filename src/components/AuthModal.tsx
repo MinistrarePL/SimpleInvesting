@@ -22,6 +22,10 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
+
+  const termsHref = '/terms-of-service';
+  const privacyHref = '/privacy-policy';
 
   // Zamykanie klawiszem ESC
   useEffect(() => {
@@ -40,6 +44,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
       setSuccess(null);
       setEmail('');
       setPassword('');
+      setAcceptedLegal(false);
     }
   }, [isOpen, initialView]);
 
@@ -50,6 +55,12 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
     setLoading(true);
     setError(null);
     setSuccess(null);
+
+    if (view === 'register' && !acceptedLegal) {
+      setError(t('auth.mustAcceptLegal'));
+      setLoading(false);
+      return;
+    }
 
     try {
       if (view === 'login') {
@@ -86,6 +97,10 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
   };
 
   const handleOAuthLogin = async (provider: 'google') => {
+    if (view === 'register' && !acceptedLegal) {
+      setError(t('auth.mustAcceptLegal'));
+      return;
+    }
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -192,6 +207,38 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
               </div>
             )}
 
+            {view === 'register' && (
+              <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+                <input
+                  type="checkbox"
+                  checked={acceptedLegal}
+                  onChange={(e) => setAcceptedLegal(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-theme-border text-teal-600 focus:ring-teal-600"
+                />
+                <span className="text-sm text-theme-text leading-snug">
+                  {t('auth.legalPrefix')}
+                  <a
+                    href={termsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-theme-primary hover:text-theme-primary-hover underline underline-offset-2"
+                  >
+                    {t('auth.termsLink')}
+                  </a>
+                  {t('auth.legalMiddle')}
+                  <a
+                    href={privacyHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-theme-primary hover:text-theme-primary-hover underline underline-offset-2"
+                  >
+                    {t('auth.privacyLink')}
+                  </a>
+                  .
+                </span>
+              </label>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -244,7 +291,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
                 {view === 'reset' ? (
                   <button
                     type="button"
-                    onClick={() => { setView('login'); setError(null); setSuccess(null); }}
+                    onClick={() => { setView('login'); setError(null); setSuccess(null); setAcceptedLegal(false); }}
                     className="font-medium text-theme-primary hover:text-theme-primary-hover transition-colors"
                   >
                     {t('auth.backToLogin')}
@@ -260,6 +307,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
                         setView(view === 'login' ? 'register' : 'login');
                         setError(null);
                         setSuccess(null);
+                        setAcceptedLegal(false);
                       }}
                       className="font-medium text-theme-primary hover:text-theme-primary-hover transition-colors"
                     >

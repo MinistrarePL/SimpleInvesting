@@ -1,3 +1,11 @@
+---
+import CookieBanner from '../components/CookieBanner.astro';
+
+interface Props {
+	title?: string;
+}
+const { title = 'Porównywarka ETF | SimpleInvesting' } = Astro.props;
+---
 <!doctype html>
 <html lang="pl">
 	<head>
@@ -5,8 +13,8 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Porównywarka ETF | SimpleInvesting</title>
-		
+		<title>{title}</title>
+
 		<!-- Skrypt zapobiegający FOUC (Flash of Unstyled Content) przy ładowaniu motywu -->
 		<script is:inline>
 			const theme = (() => {
@@ -18,7 +26,7 @@
 				}
 				return 'light';
 			})();
-		
+
 			if (theme === 'dark') {
 				document.documentElement.classList.add('dark');
 			} else {
@@ -28,6 +36,58 @@
 	</head>
 	<body>
 		<slot />
+
+		<footer class="border-t border-theme-border bg-theme-surface text-theme-text-muted text-sm">
+			<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+				<p>&copy; {new Date().getFullYear()} SimpleInvesting</p>
+				<nav class="flex flex-wrap items-center gap-x-4 gap-y-2">
+					<a href="/privacy-policy" class="hover:text-theme-text transition-colors">
+						<span data-footer-i18n="pl">Polityka prywatności</span>
+						<span data-footer-i18n="en" class="hidden">Privacy Policy</span>
+					</a>
+					<a href="/terms-of-service" class="hover:text-theme-text transition-colors">
+						<span data-footer-i18n="pl">Regulamin</span>
+						<span data-footer-i18n="en" class="hidden">Terms of Service</span>
+					</a>
+					<button type="button" onclick="window.openCookieSettings && window.openCookieSettings()" class="hover:text-theme-text transition-colors">
+						<span data-footer-i18n="pl">Ustawienia cookies</span>
+						<span data-footer-i18n="en" class="hidden">Cookie settings</span>
+					</button>
+				</nav>
+			</div>
+		</footer>
+
+		<script is:inline>
+			(function () {
+				var LANG_KEY = 'si.lang';
+				function detectLang() {
+					try {
+						var stored = localStorage.getItem(LANG_KEY);
+						if (stored === 'en' || stored === 'pl') return stored;
+					} catch (e) {}
+					var nav = (navigator.language || 'pl').toLowerCase();
+					return nav.indexOf('pl') === 0 ? 'pl' : 'en';
+				}
+				function applyFooter(lang) {
+					document.querySelectorAll('[data-footer-i18n]').forEach(function (el) {
+						if (el.getAttribute('data-footer-i18n') === lang) {
+							el.classList.remove('hidden');
+						} else {
+							el.classList.add('hidden');
+						}
+					});
+				}
+				applyFooter(detectLang());
+				window.addEventListener('storage', function (e) {
+					if (e.key === LANG_KEY) applyFooter(detectLang());
+				});
+				window.addEventListener('si:lang-change', function () {
+					applyFooter(detectLang());
+				});
+			})();
+		</script>
+
+		<CookieBanner />
 	</body>
 </html>
 

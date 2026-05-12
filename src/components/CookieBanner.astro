@@ -1,0 +1,240 @@
+---
+---
+<div
+	id="cookie-banner"
+	class="hidden fixed inset-x-0 bottom-0 z-[100] px-4 pb-4 sm:px-6 sm:pb-6"
+	role="region"
+	aria-label="Cookie consent"
+>
+	<div class="mx-auto max-w-3xl rounded-2xl border border-theme-border bg-theme-surface shadow-2xl p-5 sm:p-6">
+		<div data-cb-lang="pl">
+			<h2 class="text-lg font-semibold text-theme-text mb-2">Używamy plików cookies</h2>
+			<p class="text-sm text-theme-text-muted leading-relaxed">
+				Korzystamy z plików cookies, aby zapewnić prawidłowe działanie serwisu (np. sesję logowania,
+				zapamiętanie motywu i języka). W przyszłości możemy używać również cookies analitycznych
+				i marketingowych – wyłącznie za Twoją zgodą. Szczegóły znajdziesz w
+				<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Polityce prywatności</a>.
+			</p>
+			<div class="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+				<button type="button" data-cb-action="settings" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">
+					Ustawienia
+				</button>
+				<button type="button" data-cb-action="necessary" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">
+					Tylko niezbędne
+				</button>
+				<button type="button" data-cb-action="accept-all" class="px-4 py-2 text-sm font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition-colors">
+					Akceptuj wszystkie
+				</button>
+			</div>
+		</div>
+		<div data-cb-lang="en" class="hidden">
+			<h2 class="text-lg font-semibold text-theme-text mb-2">We use cookies</h2>
+			<p class="text-sm text-theme-text-muted leading-relaxed">
+				We use cookies to ensure the proper operation of the service (e.g. login session,
+				theme and language preferences). In the future we may also use analytical and marketing
+				cookies &ndash; only with your consent. See our
+				<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Privacy Policy</a> for details.
+			</p>
+			<div class="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+				<button type="button" data-cb-action="settings" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">
+					Settings
+				</button>
+				<button type="button" data-cb-action="necessary" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">
+					Necessary only
+				</button>
+				<button type="button" data-cb-action="accept-all" class="px-4 py-2 text-sm font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition-colors">
+					Accept all
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div
+	id="cookie-settings"
+	class="hidden fixed inset-0 z-[110] flex items-center justify-center px-4"
+	role="dialog"
+	aria-modal="true"
+	aria-labelledby="cookie-settings-title"
+>
+	<div class="absolute inset-0 bg-black/60" data-cb-action="settings-close"></div>
+	<div class="relative w-full max-w-lg rounded-2xl bg-theme-surface border border-theme-border shadow-2xl p-6">
+		<div data-cb-lang="pl">
+			<h3 id="cookie-settings-title" class="text-lg font-semibold text-theme-text mb-1">Ustawienia plików cookies</h3>
+			<p class="text-sm text-theme-text-muted mb-4">Wybierz, na które kategorie wyrażasz zgodę.</p>
+
+			<div class="space-y-3">
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg">
+					<input type="checkbox" checked disabled class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Niezbędne (zawsze aktywne)</span>
+						<span class="block text-theme-text-muted">Wymagane do działania serwisu, sesji logowania i zapamiętania preferencji.</span>
+					</span>
+				</label>
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg cursor-pointer">
+					<input type="checkbox" data-cb-toggle="analytics" class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600 focus:ring-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Analityczne</span>
+						<span class="block text-theme-text-muted">Pozwalają mierzyć ruch i sposób korzystania z serwisu w sposób zagregowany.</span>
+					</span>
+				</label>
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg cursor-pointer">
+					<input type="checkbox" data-cb-toggle="marketing" class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600 focus:ring-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Marketingowe</span>
+						<span class="block text-theme-text-muted">Wykorzystywane do dopasowania treści marketingowych. Aktualnie nieużywane.</span>
+					</span>
+				</label>
+			</div>
+
+			<div class="mt-5 flex flex-col sm:flex-row gap-2 sm:justify-end">
+				<button type="button" data-cb-action="settings-close" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">Anuluj</button>
+				<button type="button" data-cb-action="save" class="px-4 py-2 text-sm font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition-colors">Zapisz wybór</button>
+			</div>
+		</div>
+		<div data-cb-lang="en" class="hidden">
+			<h3 class="text-lg font-semibold text-theme-text mb-1">Cookie settings</h3>
+			<p class="text-sm text-theme-text-muted mb-4">Choose which categories you consent to.</p>
+
+			<div class="space-y-3">
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg">
+					<input type="checkbox" checked disabled class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Necessary (always on)</span>
+						<span class="block text-theme-text-muted">Required for the service to function, login session and saved preferences.</span>
+					</span>
+				</label>
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg cursor-pointer">
+					<input type="checkbox" data-cb-toggle="analytics" class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600 focus:ring-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Analytical</span>
+						<span class="block text-theme-text-muted">Allow us to measure aggregate traffic and usage of the service.</span>
+					</span>
+				</label>
+				<label class="flex items-start gap-3 p-3 rounded-xl border border-theme-border bg-theme-bg cursor-pointer">
+					<input type="checkbox" data-cb-toggle="marketing" class="mt-1 h-4 w-4 rounded border-theme-border text-teal-600 focus:ring-teal-600" />
+					<span class="text-sm">
+						<span class="block font-semibold text-theme-text">Marketing</span>
+						<span class="block text-theme-text-muted">Used to tailor marketing content. Currently not in use.</span>
+					</span>
+				</label>
+			</div>
+
+			<div class="mt-5 flex flex-col sm:flex-row gap-2 sm:justify-end">
+				<button type="button" data-cb-action="settings-close" class="px-4 py-2 text-sm font-medium rounded-xl border border-theme-border text-theme-text hover:bg-theme-border/40 transition-colors">Cancel</button>
+				<button type="button" data-cb-action="save" class="px-4 py-2 text-sm font-bold rounded-xl bg-teal-600 hover:bg-teal-700 text-white transition-colors">Save choice</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script is:inline>
+	(function () {
+		var STORAGE_KEY = 'si.cookieConsent';
+		var LANG_KEY = 'si.lang';
+		var banner = document.getElementById('cookie-banner');
+		var modal = document.getElementById('cookie-settings');
+		if (!banner || !modal) return;
+
+		function readConsent() {
+			try {
+				var raw = localStorage.getItem(STORAGE_KEY);
+				if (!raw) return null;
+				return JSON.parse(raw);
+			} catch (e) {
+				return null;
+			}
+		}
+
+		function saveConsent(consent) {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify({
+					version: 1,
+					timestamp: new Date().toISOString(),
+					necessary: true,
+					analytics: !!consent.analytics,
+					marketing: !!consent.marketing
+				}));
+			} catch (e) {}
+			window.dispatchEvent(new CustomEvent('si:cookie-consent', { detail: consent }));
+		}
+
+		function applyLang(lang) {
+			document.querySelectorAll('[data-cb-lang]').forEach(function (el) {
+				if (el.getAttribute('data-cb-lang') === lang) {
+					el.classList.remove('hidden');
+				} else {
+					el.classList.add('hidden');
+				}
+			});
+		}
+
+		function detectLang() {
+			try {
+				var stored = localStorage.getItem(LANG_KEY);
+				if (stored === 'en' || stored === 'pl') return stored;
+			} catch (e) {}
+			var nav = (navigator.language || 'pl').toLowerCase();
+			return nav.indexOf('pl') === 0 ? 'pl' : 'en';
+		}
+
+		function showBanner() {
+			applyLang(detectLang());
+			banner.classList.remove('hidden');
+		}
+		function hideBanner() {
+			banner.classList.add('hidden');
+		}
+		function openSettings() {
+			applyLang(detectLang());
+			var consent = readConsent() || { analytics: false, marketing: false };
+			modal.querySelectorAll('[data-cb-toggle="analytics"]').forEach(function (cb) { cb.checked = !!consent.analytics; });
+			modal.querySelectorAll('[data-cb-toggle="marketing"]').forEach(function (cb) { cb.checked = !!consent.marketing; });
+			modal.classList.remove('hidden');
+		}
+		function closeSettings() {
+			modal.classList.add('hidden');
+		}
+
+		document.addEventListener('click', function (e) {
+			var target = e.target;
+			if (!(target instanceof Element)) return;
+			var actionEl = target.closest('[data-cb-action]');
+			if (!actionEl) return;
+			var action = actionEl.getAttribute('data-cb-action');
+			if (action === 'accept-all') {
+				saveConsent({ analytics: true, marketing: true });
+				hideBanner();
+				closeSettings();
+			} else if (action === 'necessary') {
+				saveConsent({ analytics: false, marketing: false });
+				hideBanner();
+				closeSettings();
+			} else if (action === 'settings') {
+				openSettings();
+			} else if (action === 'settings-close') {
+				closeSettings();
+			} else if (action === 'save') {
+				var analytics = !!modal.querySelector('[data-cb-toggle="analytics"]:checked');
+				var marketing = !!modal.querySelector('[data-cb-toggle="marketing"]:checked');
+				saveConsent({ analytics: analytics, marketing: marketing });
+				hideBanner();
+				closeSettings();
+			}
+		});
+
+		window.openCookieSettings = function () {
+			openSettings();
+		};
+
+		window.addEventListener('storage', function (e) {
+			if (e.key === LANG_KEY) {
+				applyLang(detectLang());
+			}
+		});
+
+		if (!readConsent()) {
+			showBanner();
+		}
+	})();
+</script>
