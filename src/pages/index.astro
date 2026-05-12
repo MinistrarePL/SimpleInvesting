@@ -15,18 +15,24 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
-// Pobieranie danych z bazy (sortujemy po stopie zwrotu za 1 rok malejąco)
-const { data: etfs, error } = await supabase
-  .from('etfs')
-  .select('*')
-  .order('return_1y', { ascending: false })
-  .limit(20);
+/** PostgREST domyślnie zwraca max ~1000 wierszy — stronicujemy dla pełnej listy ETF. */
+const PAGE = 1000;
+let initialEtfs: Record<string, unknown>[] = [];
+for (let from = 0; ; from += PAGE) {
+  const { data: pageRows, error } = await supabase
+    .from('etfs')
+    .select('*')
+    .order('return_1y', { ascending: false })
+    .range(from, from + PAGE - 1);
 
-if (error) {
-  console.error('Błąd pobierania danych z Supabase:', error);
+  if (error) {
+    console.error('Błąd pobierania danych z Supabase:', error);
+    break;
+  }
+  if (!pageRows?.length) break;
+  initialEtfs = initialEtfs.concat(pageRows);
+  if (pageRows.length < PAGE) break;
 }
-
-const initialEtfs = etfs || [];
 ---
 
 <Layout>

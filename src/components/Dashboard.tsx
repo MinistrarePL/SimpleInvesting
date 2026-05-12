@@ -1,25 +1,27 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Moon, Sun, Globe, Search, Plus, Loader2, User, LogOut } from 'lucide-react';
+import { Moon, Sun, Globe, Search, User, LogOut, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
 import AuthModal, { supabase } from './AuthModal';
+import type { EtfRow } from '../types/etf';
 
-// Typy danych z Supabase
-interface ETF {
-  id: string;
-  ticker: string;
-  name: string;
-  category: string;
-  return_1w: number | null;
-  return_1m: number | null;
-  return_1q: number | null;
-  return_1y: number | null;
-  last_updated: string;
-}
+type SortKey =
+  | 'ticker'
+  | 'exchange'
+  | 'category'
+  | 'currency'
+  | 'total_assets'
+  | 'expense_ratio'
+  | 'morningstar_rating'
+  | 'return_1w'
+  | 'return_1m'
+  | 'return_1q'
+  | 'return_1y';
+type SortDir = 'asc' | 'desc';
 
 interface DashboardProps {
-  initialEtfs: ETF[];
+  initialEtfs: EtfRow[];
 }
 
 export default function Dashboard({ initialEtfs }: DashboardProps) {
@@ -27,13 +29,17 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
   // Stan dla ETF-ów (pozwala na dodawanie nowych do tabeli bez odświeżania)
-  const [etfs, setEtfs] = useState<ETF[]>(initialEtfs);
+  const [etfs, setEtfs] = useState<EtfRow[]>(initialEtfs);
 
   // Stan dla wyszukiwarki (filtrowanie tabeli)
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Stan sortowania tabeli
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
   // Stan dla bocznego panelu
-  const [selectedEtf, setSelectedEtf] = useState<ETF | null>(null);
+  const [selectedEtf, setSelectedEtf] = useState<EtfRow | null>(null);
 
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
@@ -66,19 +72,78 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   };
 
   // Filtrowanie ETF-ów na podstawie wpisanego tekstu
-  const filteredEtfs = etfs.filter((etf) => {
+  const filteredEtfs = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return (
+    const filtered = etfs.filter((etf) =>
       etf.ticker.toLowerCase().includes(query) ||
       etf.name.toLowerCase().includes(query) ||
-      (etf.category && etf.category.toLowerCase().includes(query))
+      (etf.category && etf.category.toLowerCase().includes(query)) ||
+      (etf.exchange && etf.exchange.toLowerCase().includes(query)) ||
+      (etf.currency && etf.currency.toLowerCase().includes(query))
     );
-  });
+
+    if (!sortKey) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let valA: string | number | null;
+      let valB: string | number | null;
+
+      if (sortKey === 'ticker') {
+        valA = a.ticker.toLowerCase();
+        valB = b.ticker.toLowerCase();
+      } else if (sortKey === 'exchange') {
+        valA = (a.exchange || '').toLowerCase();
+        valB = (b.exchange || '').toLowerCase();
+      } else if (sortKey === 'category') {
+        valA = (a.category || '').toLowerCase();
+        valB = (b.category || '').toLowerCase();
+      } else if (sortKey === 'currency') {
+        valA = (a.currency || '').toLowerCase();
+        valB = (b.currency || '').toLowerCase();
+      } else {
+        valA = a[sortKey] as number | null;
+        valB = b[sortKey] as number | null;
+      }
+
+      if (valA == null && valB == null) return 0;
+      if (valA == null) return 1;
+      if (valB == null) return -1;
+
+      let cmp: number;
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        cmp = valA.localeCompare(valB);
+      } else {
+        cmp = (valA as number) - (valB as number);
+      }
+
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+  }, [etfs, searchQuery, sortKey, sortDir]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      if (sortDir === 'asc') {
+        setSortDir('desc');
+      } else {
+        setSortKey(null);
+        setSortDir('asc');
+      }
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ column }: { column: SortKey }) => {
+    if (sortKey !== column) return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />;
+    if (sortDir === 'asc') return <ChevronUp className="w-3.5 h-3.5" />;
+    return <ChevronDown className="w-3.5 h-3.5" />;
+  };
 
   // Inicjalizacja motywu na podstawie localStorage lub preferencji systemowych
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMatchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
       setTheme('dark');
@@ -125,6 +190,25 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         {val > 0 ? '+' : ''}{val}%
       </span>
     );
+  };
+
+  const formatAum = (n: number | null) => {
+    if (n == null || !Number.isFinite(n)) return '—';
+    if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
+    if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
+    if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
+    if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
+    return String(Math.round(n));
+  };
+
+  const formatTer = (n: number | null) => {
+    if (n == null || !Number.isFinite(n)) return '—';
+    return `${n.toFixed(2)}%`;
+  };
+
+  const renderStars = (rating: number | null) => {
+    if (rating == null || rating < 1 || rating > 5) return <span className="text-theme-text-muted">—</span>;
+    return <span className="text-amber-500 tracking-tight">{'★'.repeat(rating)}</span>;
   };
 
   return (
@@ -214,33 +298,111 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-theme-border bg-theme-bg/50">
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider">
-                    {t('table.name')}
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('ticker')}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('table.name')}
+                      <SortIcon column="ticker" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider">
-                    {t('table.exposure')}
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('category')}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('table.exposure')}
+                      <SortIcon column="category" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider">
-                    {t('table.currency')}
+                  <th
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('exchange')}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('table.exchange')}
+                      <SortIcon column="exchange" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider text-right">
-                    {t('table.w1')}
+                  <th
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('currency')}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('table.currency')}
+                      <SortIcon column="currency" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider text-right">
-                    {t('table.m1')}
+                  <th
+                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('total_assets')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.aum')}
+                      <SortIcon column="total_assets" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider text-right">
-                    {t('table.q1')}
+                  <th
+                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('expense_ratio')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.ter')}
+                      <SortIcon column="expense_ratio" />
+                    </span>
                   </th>
-                  <th className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider text-right">
-                    {t('table.y1')}
+                  <th
+                    className="hidden lg:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('morningstar_rating')}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                      {t('table.ms')}
+                      <SortIcon column="morningstar_rating" />
+                    </span>
+                  </th>
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('return_1w')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.w1')}
+                      <SortIcon column="return_1w" />
+                    </span>
+                  </th>
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('return_1m')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.m1')}
+                      <SortIcon column="return_1m" />
+                    </span>
+                  </th>
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('return_1q')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.q1')}
+                      <SortIcon column="return_1q" />
+                    </span>
+                  </th>
+                  <th
+                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('return_1y')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.y1')}
+                      <SortIcon column="return_1y" />
+                    </span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border">
                 {filteredEtfs.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-8 text-center text-theme-text-muted">
+                    <td colSpan={11} className="py-8 text-center text-theme-text-muted">
                       {t('table.noData')}
                     </td>
                   </tr>
@@ -264,8 +426,20 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                           {etf.category || 'N/A'}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-sm font-medium text-theme-text-muted">
-                        USD
+                      <td className="py-4 px-4 text-xs font-semibold text-theme-text-muted whitespace-nowrap">
+                        {etf.exchange || '—'}
+                      </td>
+                      <td className="py-4 px-4 text-sm font-medium text-theme-text-muted whitespace-nowrap">
+                        {etf.currency || '—'}
+                      </td>
+                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                        {formatAum(etf.total_assets)}
+                      </td>
+                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                        {formatTer(etf.expense_ratio)}
+                      </td>
+                      <td className="hidden lg:table-cell py-4 px-4 text-sm text-center">
+                        {renderStars(etf.morningstar_rating)}
                       </td>
                       <td className="py-4 px-6 text-right">
                         {renderReturn(etf.return_1w)}

@@ -5,11 +5,14 @@ import { calculateReturns } from '../../utils/calculateReturns';
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { ticker, name } = body;
+    const { ticker, name, exchange: exRaw } = body;
+    const exchange = (typeof exRaw === 'string' && exRaw.trim() ? exRaw.trim().toUpperCase() : 'US') as string;
 
     if (!ticker) {
       return new Response(JSON.stringify({ error: 'Ticker is required' }), { status: 400 });
     }
+
+    const code = ticker.includes('.') ? ticker.split('.')[0]! : ticker;
 
     const apiKey = import.meta.env.EODHD_API_KEY || process.env.EODHD_API_KEY;
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
@@ -30,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Używamy giełdy US domyślnie, ale EODHD obsługuje też inne (wymagałoby to przekazania pełnego kodu np. VOO.US)
     // Nasza wyszukiwarka zwraca pole Code i Exchange, więc najlepiej użyć połączonego formatu
-    const fullTicker = ticker.includes('.') ? ticker : `${ticker}.US`;
+    const fullTicker = ticker.includes('.') ? ticker : `${code}.${exchange}`;
 
     const url = `https://eodhd.com/api/eod/${fullTicker}?from=${fromStr}&to=${toStr}&api_token=${apiKey}&fmt=json`;
     const response = await fetch(url);
@@ -47,19 +50,20 @@ export const POST: APIRoute = async ({ request }) => {
     const returns = calculateReturns(prices);
 
     const dbRecord = {
-      ticker: ticker,
-      name: name || ticker,
-      category: 'Dodane przez użytkownika', // Domyślna kategoria dla nowych
+      ticker: code.toUpperCase(),
+      exchange,
+      name: name || code,
+      category: 'Dodane przez użytkownika',
       return_1w: returns['1W'],
       return_1m: returns['1M'],
       return_1q: returns['1Q'],
       return_1y: returns['1Y'],
-      last_updated: new Date().toISOString()
+      last_updated: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
       .from('etfs')
-      .upsert(dbRecord, { onConflict: 'ticker' })
+      .upsert(dbRecord, { onConflict: 'ticker,exchange' })
       .select()
       .single();
 

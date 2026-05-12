@@ -9,7 +9,10 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "discover:etfs": "tsx scripts/discover-etfs.ts",
+    "seed:fundamentals": "tsx scripts/seed-fundamentals.ts",
+    "seed:prices": "tsx scripts/seed-prices.ts"
   },
   "dependencies": {
     "@astrojs/netlify": "^7.0.8",

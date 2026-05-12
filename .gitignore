@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# generated ETF universe (local / CI; może być duży)
+data/etf-universe.json
+
 # macOS-specific files
 .DS_Store
 
