@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { X, SlidersHorizontal, Info, Search, ChevronDown } from 'lucide-react';
+import { X, SlidersHorizontal, Info, Search } from 'lucide-react';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
-import { inferEtfTheme } from '../lib/etfTheme';
 import {
   AGE_BUCKETS,
   AUM_BUCKETS,
@@ -13,6 +12,7 @@ import {
   RETURN_THRESHOLDS,
   countActiveGroups,
   createEmptyFilters,
+  exposureFilterKey,
   extractIssuer,
   type ActiveFilters,
   type AgeBucket,
@@ -60,11 +60,12 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
-  const categoryOptions = useMemo(() => {
+  /** Klucze `theme:|cat:` jak w filtrze + etykiety jak w kolumnie tabeli. */
+  const exposureOptions = useMemo(() => {
     const map = new Map<string, string>();
     for (const e of etfs) {
-      if (!e.category) continue;
-      if (!map.has(e.category)) map.set(e.category, getFriendlyCategory(e.category, lang));
+      const key = exposureFilterKey(e);
+      if (!map.has(key)) map.set(key, getFriendlyCategory(e.category, lang, e.name));
     }
     return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
   }, [etfs, lang]);
@@ -102,16 +103,6 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([k]) => k);
   }, [etfs]);
-
-  const themeOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const e of etfs) {
-      const key = inferEtfTheme(e.name, 'en');
-      if (!key) continue;
-      if (!map.has(key)) map.set(key, inferEtfTheme(e.name, lang) ?? key);
-    }
-    return Array.from(map.entries()).sort((a, b) => a[1].localeCompare(b[1]));
-  }, [etfs, lang]);
 
   const activeGroups = countActiveGroups(filters);
   const patch = (p: Partial<ActiveFilters>) => onChange({ ...filters, ...p });
@@ -151,19 +142,17 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* 1. Temat — collapsible dropdown, first */}
-          {themeOptions.length > 0 && (
-            <CollapsibleMultiSelect
-              title={t('filters.theme.title')}
-              badge={filters.themes.size || null}
-              info={t('filters.theme.info')}
-              options={themeOptions}
-              selected={filters.themes}
-              onToggle={(v) => patch({ themes: toggleInSet(filters.themes, v) })}
-              searchPlaceholder={t('filters.searchIn')}
-            />
-          )}
+        <div className="flex-1 overflow-y-auto scrollbar-thumb-theme p-6 space-y-8">
+          {/* 1. Ekspozycja / kategoria (temat z nazwy + kategoria Morningstar) */}
+          <CollapsibleMultiSelect
+            title={t('filters.category.title')}
+            badge={filters.categories.size || null}
+            info={t('filters.category.info')}
+            options={exposureOptions}
+            selected={filters.categories}
+            onToggle={(v) => patch({ categories: toggleInSet(filters.categories, v) })}
+            searchPlaceholder={t('filters.searchIn')}
+          />
 
           {/* 2. Stopa zwrotu — only threshold chips */}
           <FilterGroup title={t('filters.return.title')} info={t('filters.return.info')}>
@@ -175,18 +164,7 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
             </div>
           </FilterGroup>
 
-          {/* 3. Kategoria — collapsible dropdown */}
-          <CollapsibleMultiSelect
-            title={t('filters.category.title')}
-            badge={filters.categories.size || null}
-            info={t('filters.category.info')}
-            options={categoryOptions}
-            selected={filters.categories}
-            onToggle={(v) => patch({ categories: toggleInSet(filters.categories, v) })}
-            searchPlaceholder={t('filters.searchIn')}
-          />
-
-          {/* 4. Issuer — collapsible dropdown */}
+          {/* 3. Issuer — collapsible dropdown */}
           <CollapsibleMultiSelect
             title={t('filters.issuer.title')}
             badge={filters.issuers.size || null}
@@ -313,7 +291,7 @@ function FilterGroup({ title, badge, info, children }: { title: string; badge?: 
   return (
     <section>
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-sm font-semibold text-theme-text uppercase tracking-wider">{title}</h3>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
         {badge != null && badge > 0 && (
           <span className="text-xs font-medium px-1.5 py-0.5 rounded-md bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">{badge}</span>
         )}
@@ -374,63 +352,87 @@ function CollapsibleMultiSelect({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const q = query.trim().toLowerCase();
   const filtered = q
     ? options.filter(([k, label]) => k.toLowerCase().includes(q) || label.toLowerCase().includes(q))
     : options;
 
+  const selectedChips = options.filter(([k]) => selected.has(k));
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [open]);
+
   return (
     <section>
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-theme-text uppercase tracking-wider">{title}</h3>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
         {badge != null && badge > 0 && (
           <span className="text-xs font-medium px-1.5 py-0.5 rounded-md bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">{badge}</span>
         )}
         {info && <InfoTooltip text={info} />}
       </div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-theme-border bg-theme-bg text-sm text-theme-text hover:border-theme-primary transition-colors"
-      >
-        <span className="truncate text-theme-text-muted">
-          {selected.size === 0
-            ? searchPlaceholder
-            : `${selected.size} ${t('filters.active', { count: selected.size }).toLowerCase()}`}
-        </span>
-        <ChevronDown className={`w-4 h-4 text-theme-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="mt-2 rounded-lg border border-theme-border bg-theme-bg overflow-hidden">
-          <div className="relative border-b border-theme-border">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-text-muted" />
+      <div ref={wrapperRef} className="relative">
+        <div
+          className={`flex flex-wrap items-center gap-1.5 min-h-[42px] px-2.5 py-1.5 rounded-lg border bg-theme-bg text-sm transition-colors cursor-text ${open ? 'border-theme-primary ring-1 ring-theme-primary' : 'border-theme-border hover:border-theme-primary'}`}
+          onClick={() => { setOpen(true); inputRef.current?.focus(); }}
+        >
+          {selectedChips.map(([key, label]) => (
+            <span key={key} className="inline-flex items-center gap-1 max-w-full rounded-md bg-teal-600/20 text-teal-400 border border-teal-600/30 px-2 py-0.5 text-xs font-medium">
+              <span className="truncate max-w-[160px]">{label}</span>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onToggle(key); }}
+                className="shrink-0 hover:text-white transition-colors"
+                aria-label={`${t('filters.removeChip')}: ${label}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          ))}
+          <div className="relative flex-1 min-w-[80px]">
             <input
+              ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="block w-full pl-8 pr-2 py-2 text-sm bg-transparent text-theme-text placeholder-theme-text-muted focus:outline-none"
+              onChange={(e) => { setQuery(e.target.value); if (!open) setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              placeholder={selected.size === 0 ? searchPlaceholder : ''}
+              className="w-full bg-transparent text-theme-text placeholder-theme-text-muted text-sm py-0.5 focus:outline-none"
             />
           </div>
-          <div className="max-h-48 overflow-y-auto divide-y divide-theme-border">
-            {filtered.length === 0 ? (
-              <p className="text-sm text-theme-text-muted py-3 text-center">{t('filters.none')}</p>
-            ) : (
-              filtered.map(([key, label]) => (
-                <label key={key} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-theme-bg/80 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(key)}
-                    onChange={() => onToggle(key)}
-                    className="filter-checkbox"
-                  />
-                  <span className="text-theme-text">{label}</span>
-                </label>
-              ))
-            )}
-          </div>
         </div>
-      )}
+
+        {open && (
+          <div className="absolute z-30 left-0 right-0 mt-1 rounded-lg border border-theme-border bg-theme-bg shadow-xl overflow-hidden">
+            <div className="max-h-52 overflow-y-auto scrollbar-thumb-theme">
+              {filtered.length === 0 ? (
+                <p className="text-sm text-theme-text-muted py-3 text-center">{t('filters.none')}</p>
+              ) : (
+                filtered.map(([key, label]) => (
+                  <label key={key} className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-theme-surface text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(key)}
+                      onChange={() => onToggle(key)}
+                      className="filter-checkbox"
+                    />
+                    <span className="text-theme-text">{label}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

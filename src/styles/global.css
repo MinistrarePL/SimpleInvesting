@@ -94,6 +94,29 @@
       scrollbar-color: var(--border-color) var(--bg-color);
     }
   }
+
+  /* Ten sam wygląd scrollbara co .scrollbar-theme, ale bez rotateX — inaczej `position: sticky` na thead nie działa. */
+  .scrollbar-thumb-theme::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thumb-theme::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-radius: 4px;
+  }
+  .scrollbar-thumb-theme::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+  .scrollbar-thumb-theme::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted-color);
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    .scrollbar-thumb-theme {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) var(--bg-color);
+    }
+  }
 }
 
 @layer components {

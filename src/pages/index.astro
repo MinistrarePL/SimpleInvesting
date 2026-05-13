@@ -22,6 +22,8 @@ for (let from = 0; ; from += PAGE) {
     const { data: pageRows, error } = await supabase
       .from('etfs')
       .select('*')
+      .not('category', 'is', null)
+      .not('total_assets', 'is', null)
       .order('return_1y', { ascending: false, nullsFirst: false })
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1);

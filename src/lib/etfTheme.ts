@@ -179,3 +179,10 @@ export function inferEtfTheme(name: string | null | undefined, lang: 'pl' | 'en'
 
   return best ? best.rule[lang] : null;
 }
+
+/** Etykieta tematu do wyświetlania przy chipach filtrowania — stan przechował `inferEtfTheme(_, 'en')`. */
+export function localizedThemeCanon(enCanon: string, lang: 'pl' | 'en'): string {
+  const rule = THEME_RULES.find((r) => r.en === enCanon);
+  if (!rule) return enCanon;
+  return rule[lang];
+}

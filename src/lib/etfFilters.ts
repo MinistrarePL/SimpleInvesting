@@ -1,5 +1,6 @@
 import type { EtfRow } from '../types/etf';
-import { inferEtfTheme } from './etfTheme';
+import { getFriendlyCategory } from './categoryMap';
+import { inferEtfTheme, localizedThemeCanon } from './etfTheme';
 
 export type RiskBucket = 'very_low' | 'low' | 'medium' | 'high' | 'very_high';
 export type CostBucket = 'low' | 'medium' | 'high';
@@ -24,7 +25,6 @@ export interface ActiveFilters {
   domiciles: Set<string>;
   paysDividend: boolean | null;
   age: Set<AgeBucket>;
-  themes: Set<string>;
 }
 
 export function createEmptyFilters(): ActiveFilters {
@@ -42,7 +42,6 @@ export function createEmptyFilters(): ActiveFilters {
     domiciles: new Set(),
     paysDividend: null,
     age: new Set(),
-    themes: new Set(),
   };
 }
 
@@ -59,8 +58,7 @@ export function isFiltersEmpty(f: ActiveFilters): boolean {
     f.aum.size === 0 &&
     f.domiciles.size === 0 &&
     f.paysDividend == null &&
-    f.age.size === 0 &&
-    f.themes.size === 0
+    f.age.size === 0
   );
 }
 
@@ -78,7 +76,6 @@ export function countActiveGroups(f: ActiveFilters): number {
   if (f.domiciles.size) n++;
   if (f.paysDividend != null) n++;
   if (f.age.size) n++;
-  if (f.themes.size) n++;
   return n;
 }
 
@@ -177,10 +174,35 @@ export function classifyEtf(etf: EtfRow): FilterClassification {
   };
 }
 
-/** Klucz tematu z `etfTheme` przez próbę dopasowania po PL — wystarczy nam canonical klucz. */
+/** Klucz tematu z `etfTheme` — kanoniczna etykieta EN (np. "Semiconductors"). */
 function inferThemeKey(name: string | null | undefined): string | null {
   if (!name) return null;
   return inferEtfTheme(name, 'en');
+}
+
+const EXP_THEME = 'theme:';
+const EXP_CAT = 'cat:';
+
+/**
+ * Klucz zgodny z kolumną tabeli: jeśli z nazwy wynika temat → `theme:<enCanon>`,
+ * w przeciwnym razie `cat:<surowa kategoria Morningstar>` (może być pusty string).
+ */
+export function exposureFilterKey(etf: Pick<EtfRow, 'name' | 'category'>): string {
+  const t = inferThemeKey(etf.name);
+  if (t) return `${EXP_THEME}${t}`;
+  return `${EXP_CAT}${etf.category ?? ''}`;
+}
+
+/** Etykieta do UI (chip, dropdown) dla klucza z `exposureFilterKey`. */
+export function exposureKeyLabel(key: string, lang: 'pl' | 'en'): string {
+  if (key.startsWith(EXP_THEME)) {
+    return localizedThemeCanon(key.slice(EXP_THEME.length), lang);
+  }
+  if (key.startsWith(EXP_CAT)) {
+    const raw = key.slice(EXP_CAT.length);
+    return getFriendlyCategory(raw || null, lang);
+  }
+  return key;
 }
 
 function passesReturn(etf: EtfRow, f: ActiveFilters): boolean {
@@ -197,7 +219,10 @@ export function applyFilters(etfs: EtfRow[], f: ActiveFilters): EtfRow[] {
   return etfs.filter((etf) => {
     if (!passesReturn(etf, f)) return false;
 
-    if (f.categories.size && (!etf.category || !f.categories.has(etf.category))) return false;
+    if (f.categories.size) {
+      const ek = exposureFilterKey(etf);
+      if (!f.categories.has(ek)) return false;
+    }
 
     if (f.issuers.size) {
       const issuer = extractIssuer(etf);
@@ -243,11 +268,6 @@ export function applyFilters(etfs: EtfRow[], f: ActiveFilters): EtfRow[] {
     if (f.age.size) {
       const ag = classifyAge(etf.inception_date, now);
       if (ag == null || !f.age.has(ag)) return false;
-    }
-
-    if (f.themes.size) {
-      const t = inferThemeKey(etf.name);
-      if (!t || !f.themes.has(t)) return false;
     }
 
     return true;

@@ -13,8 +13,19 @@ const resources = {
         returns: 'Stopy zwrotu',
         currency: 'Waluta',
         exchange: 'Giełda',
-        aum: 'AUM',
-        ter: 'TER',
+        aum: 'Wielkość',
+        ter: 'Koszty',
+        sizeTier: {
+          small: 'Małe',
+          mid: 'Średnie',
+          large: 'Duże',
+          mega: 'Bardzo duże',
+        },
+        costTier: {
+          low: 'Niskie',
+          medium: 'Średnie',
+          high: 'Wysokie',
+        },
         ms: 'MS',
         w1: '1 Tydzień',
         m1: '1 Miesiąc',
@@ -37,9 +48,9 @@ const resources = {
           currency:
             'Waluta, w której ETF jest wyceniany i notowany na giełdzie. Jeśli Twoje konto działa w PLN, a ETF jest w USD, to zmiana kursu walut też wpływa na Twój wynik.',
           aum:
-            'AUM (Assets Under Management) to łączna wartość aktywów zarządzanych przez fundusz. Im większy AUM, tym zazwyczaj ETF jest bardziej płynny (łatwiejszy do kupna i sprzedaży) i mniej podatny na zamknięcie.',
+            'AUM (Assets Under Management) to łączna wartość aktywów zarządzanych przez fundusz. Im większy AUM, tym zazwyczaj ETF jest bardziej płynny i mniej podatny na zamknięcie. W komórce widać tylko kategorię wielkości (małe, średnie, duże, bardzo duże); dokładny rozmiar w liczbie pojawia się w podpowiedzi po najechaniu myszką.',
           ter:
-            'TER (Total Expense Ratio) to roczny koszt zarządzania funduszem wyrażony w procentach. Np. TER 0,20% oznacza, że z każdego zainwestowanego 1000 zł rocznie zostanie pobrane 2 zł. Niższy TER = niższe koszty dla Ciebie.',
+            'TER (Total Expense Ratio) to roczny koszt zarządzania funduszem wyrażony w procentach. Np. TER 0,20% oznacza, że z każdego zainwestowanego 1000 zł rocznie zostanie pobrane 2 zł. Niższy TER = niższe koszty dla Ciebie. W komórce widać tylko kategorię (niskie / średnie / wysokie); dokładny procent TER pojawia się w podpowiedzi po najechaniu myszką.',
           ms:
             'Ocena Morningstar (od 1 do 5 gwiazdek) porównuje wyniki funduszu z podobnymi funduszami, uwzględniając ryzyko. 5 gwiazdek oznacza, że ETF wypadł najlepiej w swojej kategorii na tle ryzyka. To nie jest rekomendacja — to historyczne porównanie.',
           w1:
@@ -60,8 +71,10 @@ const resources = {
         clear: 'Wyczyść',
         apply: 'Pokaż {{count}} ETF-ów',
         searchIn: 'Szukaj…',
+        selectPlaceholder: 'Wybierz…',
         none: 'Brak wyników',
         active: '{{count}} aktywnych',
+        removeChip: 'Usuń filtr',
         return: {
           title: 'Stopa zwrotu (min)',
           period: 'Okres',
@@ -74,7 +87,8 @@ const resources = {
         },
         category: {
           title: 'Ekspozycja / kategoria',
-          info: 'W co tak naprawdę inwestujesz: akcje USA, obligacje europejskie, surowce, rynki wschodzące itd. To najważniejszy wybór — decyduje, na czym zarobisz, a na czym stracisz, gdy zmieni się sytuacja na rynku.',
+          info:
+            'W co tak naprawdę inwestujesz — akcje USA, obligacje europejskie, surowce, rynki wschodzące itp. Lista jest taka sama jak w kolumnie tabeli: gdy w nazwie funduszu widać konkretny temat (np. AI, lit, biotechnologia), bazujemy na nim; jeśli nie — na kategorii Morningstar. To najważniejszy wybór struktury portfolio. Tematy dają węższy strzał i zwykle większą zmienność niż szerokie indeksy.',
         },
         issuer: {
           title: 'Emitent',
@@ -135,10 +149,6 @@ const resources = {
           y3to5: '3 – 5 lat',
           gt5y: '> 5 lat',
           info: 'Jak długo ETF istnieje na rynku. Starsze fundusze mają sprawdzoną historię w różnych warunkach (hossy, bessy, kryzysy), są zwykle większe i bardziej płynne. Bardzo młode (< 1 rok) trudniej ocenić.',
-        },
-        theme: {
-          title: 'Temat',
-          info: 'Konkretny pomysł inwestycyjny widoczny w nazwie funduszu (AI, lit, biotechnologia, woda itp.). Tematyczne ETF-y dają precyzyjny strzał w trend, ale są zwykle droższe, bardziej zmienne i mniej zdywersyfikowane niż fundusze na szeroki rynek.',
         },
       },
       panel: {
@@ -230,8 +240,19 @@ const resources = {
         returns: 'Returns',
         currency: 'Currency',
         exchange: 'Exchange',
-        aum: 'AUM',
-        ter: 'TER',
+        aum: 'Size',
+        ter: 'Costs',
+        sizeTier: {
+          small: 'Small',
+          mid: 'Medium',
+          large: 'Large',
+          mega: 'Very large',
+        },
+        costTier: {
+          low: 'Low',
+          medium: 'Medium',
+          high: 'High',
+        },
         ms: 'MS',
         w1: '1 Week',
         m1: '1 Month',
@@ -254,9 +275,9 @@ const resources = {
           currency:
             'The currency in which the ETF is priced and traded on the exchange. If your account is in a different currency, exchange rate fluctuations will also affect your returns.',
           aum:
-            'AUM (Assets Under Management) is the total value of assets held by the fund. A larger AUM generally means better liquidity (easier to buy and sell) and a lower risk of the fund being closed.',
+            'Assets under management (AUM): total fund size. Larger usually means better liquidity and less closure risk. The cell shows only a size tier (small through very large); hover for the exact amount.',
           ter:
-            'TER (Total Expense Ratio) is the annual management fee expressed as a percentage. For example, a TER of 0.20% means you pay $2 per year for every $1,000 invested. A lower TER means lower costs for you.',
+            'TER (Total Expense Ratio) is the annual management fee as a %. For example, 0.20% means about $2 per year per $1,000 invested. The cell shows only a tier — low / medium / high — matching our filters; hover for the exact TER.',
           ms:
             'The Morningstar rating (1 to 5 stars) compares a fund\'s risk-adjusted returns against similar funds. 5 stars means the ETF performed best in its category relative to risk. It is a historical comparison, not a buy recommendation.',
           w1:
@@ -277,8 +298,10 @@ const resources = {
         clear: 'Clear',
         apply: 'Show {{count}} ETFs',
         searchIn: 'Search…',
+        selectPlaceholder: 'Select…',
         none: 'No results',
         active: '{{count}} active',
+        removeChip: 'Remove filter',
         return: {
           title: 'Return (min)',
           period: 'Period',
@@ -291,7 +314,8 @@ const resources = {
         },
         category: {
           title: 'Exposure / category',
-          info: 'What the ETF actually invests in: US stocks, European bonds, commodities, emerging markets and so on. This is your most important choice — it decides what drives your gains and losses when markets move.',
+          info:
+            'What the ETF invests in — US stocks, European bonds, commodities, emerging markets, and so on. The list matches the table column: when the fund name clearly signals a theme (AI, lithium, biotech, etc.), we use that; otherwise we use Morningstar category. Themes are narrower and often pricier and more volatile than broad index funds.',
         },
         issuer: {
           title: 'Issuer',
@@ -352,10 +376,6 @@ const resources = {
           y3to5: '3 – 5 years',
           gt5y: '> 5 years',
           info: 'How long the ETF has been around. Older funds have a track record across different market conditions (bull, bear, crises), tend to be larger and more liquid. Very young funds (< 1 year) are harder to judge.',
-        },
-        theme: {
-          title: 'Theme',
-          info: 'A specific investment idea visible in the fund name (AI, lithium, biotech, water, etc.). Thematic ETFs let you bet on a trend precisely, but tend to be pricier, more volatile, and less diversified than broad-market funds.',
         },
       },
       panel: {

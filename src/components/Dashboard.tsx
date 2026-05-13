@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Moon,
@@ -22,7 +23,88 @@ import FiltersSidePanel from './FiltersSidePanel';
 import AuthModal, { supabase } from './AuthModal';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
-import { applyFilters, createEmptyFilters, type ActiveFilters } from '../lib/etfFilters';
+import { applyFilters, classifyAum, classifyCost, createEmptyFilters, exposureKeyLabel, type ActiveFilters } from '../lib/etfFilters';
+
+function removeFromSet<T>(set: Set<T>, value: T): Set<T> {
+  const next = new Set(set);
+  next.delete(value);
+  return next;
+}
+
+/** Natywny `title` na komórkach tabel często nie pojawia się od razu (opóźnienie przeglądarki); podpowiedź w portalu + `fixed` omija przycinanie przy `overflow`. */
+function PreciseHoverTip({
+  tooltip,
+  className,
+  children,
+}: {
+  tooltip: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  const reposition = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setCoords({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setCoords(null);
+      return;
+    }
+    reposition();
+    const id = requestAnimationFrame(reposition);
+    return () => cancelAnimationFrame(id);
+  }, [open, reposition]);
+
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
+    };
+  }, [open, reposition]);
+
+  return (
+    <>
+      <span
+        ref={anchorRef}
+        className={className ?? ''}
+        tabIndex={0}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={(e) => {
+          const nextFocus = e.relatedTarget as Node | null;
+          if (nextFocus && anchorRef.current?.contains(nextFocus)) return;
+          setOpen(false);
+        }}
+      >
+        {children}
+      </span>
+      {typeof document !== 'undefined' &&
+        open &&
+        coords &&
+        createPortal(
+          <span
+            role="tooltip"
+            className="pointer-events-none fixed z-[220] whitespace-nowrap rounded-md border border-theme-border bg-theme-surface px-2.5 py-1 text-xs font-medium tabular-nums text-theme-text shadow-lg"
+            style={{ top: coords.top, left: coords.left, transform: 'translateX(-50%)' }}
+          >
+            {tooltip}
+          </span>,
+          document.body,
+        )}
+    </>
+  );
+}
 
 type SortKey =
   | 'ticker'
@@ -81,6 +163,29 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [filters, setFilters] = useState<ActiveFilters>(() => createEmptyFilters());
 
   const [infoColumn, setInfoColumn] = useState<TableInfoColumnKey | null>(null);
+
+  const tableCardRef = useRef<HTMLDivElement>(null);
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const [theadOffset, setTheadOffset] = useState(0);
+
+  useEffect(() => {
+    const HEADER_H = 64;
+    const onScroll = () => {
+      const card = tableCardRef.current;
+      const thead = theadRef.current;
+      if (!card || !thead) { setTheadOffset(0); return; }
+      const cardRect = card.getBoundingClientRect();
+      const theadH = thead.offsetHeight;
+      if (cardRect.top < HEADER_H && cardRect.bottom > HEADER_H + theadH + 20) {
+        setTheadOffset(HEADER_H - cardRect.top);
+      } else {
+        setTheadOffset(0);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
@@ -168,6 +273,116 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   }, [etfs, searchQuery, sortKey, sortDir, filters]);
 
   const filteredCount = filteredEtfs.length;
+
+  const langUi: 'pl' | 'en' = i18n.language?.startsWith('pl') ? 'pl' : 'en';
+
+  type ActiveFilterChip = { key: string; label: string; onRemove: () => void };
+
+  const activeFilterChips: ActiveFilterChip[] = useMemo(() => {
+    const out: ActiveFilterChip[] = [];
+
+    if (filters.returnMin != null) {
+      const th = filters.returnMin;
+      const labelSuffix =
+        th === 0 ? 'gt0' : th === 5 ? 'gt5' : th === 10 ? 'gt10' : 'gt20';
+      out.push({
+        key: `return:${th}`,
+        label: `${t('filters.return.title')}: ${t(`filters.return.${labelSuffix}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, returnMin: null })),
+      });
+    }
+
+    for (const expKey of filters.categories) {
+      out.push({
+        key: `exp:${expKey}`,
+        label: `${t('filters.category.title')}: ${exposureKeyLabel(expKey, langUi)}`,
+        onRemove: () => setFilters((f) => ({ ...f, categories: removeFromSet(f.categories, expKey) })),
+      });
+    }
+
+    for (const issuer of filters.issuers) {
+      out.push({
+        key: `issuer:${issuer}`,
+        label: `${t('filters.issuer.title')}: ${issuer}`,
+        onRemove: () => setFilters((f) => ({ ...f, issuers: removeFromSet(f.issuers, issuer) })),
+      });
+    }
+
+    for (const n of filters.msStars) {
+      out.push({
+        key: `ms:${n}`,
+        label: `${t('filters.morningstar.title')}: ${'★'.repeat(n)}`,
+        onRemove: () =>
+          setFilters((f) => ({ ...f, msStars: removeFromSet(f.msStars, n as 1 | 2 | 3 | 4 | 5) })),
+      });
+    }
+
+    for (const cur of filters.currencies) {
+      out.push({
+        key: `cur:${cur}`,
+        label: `${t('filters.currency.title')}: ${cur}`,
+        onRemove: () => setFilters((f) => ({ ...f, currencies: removeFromSet(f.currencies, cur) })),
+      });
+    }
+
+    if (filters.showLeveraged != null) {
+      out.push({
+        key: `lev:${filters.showLeveraged}`,
+        label: `${t('filters.leverage.title')}: ${filters.showLeveraged ? t('filters.leverage.yes') : t('filters.leverage.no')}`,
+        onRemove: () => setFilters((f) => ({ ...f, showLeveraged: null })),
+      });
+    }
+
+    for (const bucket of filters.cost) {
+      out.push({
+        key: `cost:${bucket}`,
+        label: `${t('filters.cost.title')}: ${t(`filters.cost.${bucket}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, cost: removeFromSet(f.cost, bucket) })),
+      });
+    }
+
+    for (const bucket of filters.risk) {
+      out.push({
+        key: `risk:${bucket}`,
+        label: `${t('filters.risk.title')}: ${t(`filters.risk.${bucket}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, risk: removeFromSet(f.risk, bucket) })),
+      });
+    }
+
+    for (const bucket of filters.aum) {
+      out.push({
+        key: `aum:${bucket}`,
+        label: `${t('filters.aum.title')}: ${t(`filters.aum.${bucket}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, aum: removeFromSet(f.aum, bucket) })),
+      });
+    }
+
+    for (const d of filters.domiciles) {
+      out.push({
+        key: `dom:${d}`,
+        label: `${t('filters.domicile.title')}: ${d}`,
+        onRemove: () => setFilters((f) => ({ ...f, domiciles: removeFromSet(f.domiciles, d) })),
+      });
+    }
+
+    if (filters.paysDividend != null) {
+      out.push({
+        key: `div:${filters.paysDividend}`,
+        label: `${t('filters.yield.title')}: ${filters.paysDividend ? t('filters.yield.yes') : t('filters.yield.no')}`,
+        onRemove: () => setFilters((f) => ({ ...f, paysDividend: null })),
+      });
+    }
+
+    for (const bucket of filters.age) {
+      out.push({
+        key: `age:${bucket}`,
+        label: `${t('filters.age.title')}: ${t(`filters.age.${bucket}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, age: removeFromSet(f.age, bucket) })),
+      });
+    }
+
+    return out;
+  }, [filters, langUi, t]);
   const totalPages = filteredCount === 0 ? 1 : Math.ceil(filteredCount / pageSize);
 
   useEffect(() => {
@@ -272,15 +487,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     );
   };
 
-  const formatAum = (n: number | null) => {
-    if (n == null || !Number.isFinite(n)) return '—';
-    if (n >= 1e12) return `${(n / 1e12).toFixed(2)}T`;
-    if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`;
-    if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`;
-    if (n >= 1e3) return `${(n / 1e3).toFixed(0)}K`;
-    return String(Math.round(n));
-  };
-
   const formatTer = (n: number | null) => {
     if (n == null || !Number.isFinite(n)) return '—';
     return `${n.toFixed(2)}%`;
@@ -383,13 +589,37 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           </button>
         </div>
 
-        <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
-          <div className="overflow-x-auto scrollbar-theme">
+        {activeFilterChips.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2" role="list" aria-label={t('filters.title')}>
+            {activeFilterChips.map((chip) => (
+              <div
+                key={chip.key}
+                role="listitem"
+                className="inline-flex max-w-full items-center gap-0.5 rounded-full border border-theme-border bg-theme-bg/80 py-1 pl-3 pr-1 text-theme-text shadow-sm"
+              >
+                <span className="min-w-0 truncate text-sm" title={chip.label}>
+                  {chip.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="shrink-0 rounded-full p-1 text-theme-text-muted hover:bg-theme-bg hover:text-theme-text focus:outline-none focus:ring-2 focus:ring-teal-600"
+                  aria-label={`${chip.label}: ${t('filters.removeChip')}`}
+                >
+                  <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div ref={tableCardRef} className="bg-theme-surface rounded-xl shadow-sm border border-theme-border">
+          <div className="overflow-x-auto scrollbar-thumb-theme rounded-xl">
             <table className="w-full text-left border-collapse min-w-[1100px]">
-              <thead>
-                <tr className="border-b border-theme-border bg-theme-bg/50">
+              <thead ref={theadRef} className="will-change-transform" style={{ transform: `translateY(${theadOffset}px)` }}>
+                <tr className="border-b border-theme-border">
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors shadow-[0_1px_0_0_var(--color-theme-border)]"
                     onClick={() => handleSort('ticker')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -399,7 +629,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('category')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -409,7 +639,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1w')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -419,7 +649,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1m')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -429,7 +659,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1q')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -439,7 +669,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1y')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -449,7 +679,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('currency')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -459,7 +689,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('total_assets')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -469,7 +699,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('expense_ratio')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -479,7 +709,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('morningstar_rating')}
                   >
                     <span className="inline-flex items-center justify-center gap-1.5">
@@ -513,7 +743,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                         </div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
                           {getFriendlyCategory(etf.category, i18n.language as 'pl' | 'en', etf.name)}
                         </span>
                       </td>
@@ -529,16 +759,46 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       <td className="py-4 px-6 text-right">
                         {renderReturn(etf.return_1y)}
                       </td>
-                      <td className="py-4 px-4 text-sm font-medium text-theme-text-muted whitespace-nowrap">
+                      <td className="py-4 px-4 text-base font-medium text-theme-text-muted whitespace-nowrap">
                         {etf.currency || '—'}
                       </td>
-                      <td className="py-4 px-4 text-sm text-right text-theme-text tabular-nums">
-                        {formatAum(etf.total_assets)}
+                      <td className="py-4 px-4 text-base text-right text-theme-text max-w-[13rem]">
+                        <PreciseHoverTip
+                          tooltip={
+                            etf.total_assets != null && Number.isFinite(etf.total_assets)
+                              ? new Intl.NumberFormat(langUi === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 0 }).format(etf.total_assets)
+                              : t('table.noData')
+                          }
+                          className="inline-flex w-full min-w-0 cursor-default justify-end"
+                        >
+                          {(() => {
+                            const b = classifyAum(etf.total_assets);
+                            if (!b) return <span className="tabular-nums text-theme-text-muted">—</span>;
+                            return (
+                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">{t(`table.sizeTier.${b}`)}</span>
+                            );
+                          })()}
+                        </PreciseHoverTip>
                       </td>
-                      <td className="py-4 px-4 text-sm text-right text-theme-text tabular-nums">
-                        {formatTer(etf.expense_ratio)}
+                      <td className="py-4 px-4 text-base text-right max-w-[13rem] text-theme-text">
+                        <PreciseHoverTip
+                          tooltip={
+                            etf.expense_ratio != null && Number.isFinite(etf.expense_ratio)
+                              ? formatTer(etf.expense_ratio)
+                              : t('table.noData')
+                          }
+                          className="inline-flex w-full min-w-0 cursor-default justify-end"
+                        >
+                          {(() => {
+                            const b = classifyCost(etf.expense_ratio);
+                            if (!b) return <span className="tabular-nums text-theme-text-muted">—</span>;
+                            return (
+                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">{t(`table.costTier.${b}`)}</span>
+                            );
+                          })()}
+                        </PreciseHoverTip>
                       </td>
-                      <td className="py-4 px-4 text-sm text-center">
+                      <td className="py-4 px-4 text-base text-center">
                         {renderStars(etf.morningstar_rating)}
                       </td>
                     </tr>
