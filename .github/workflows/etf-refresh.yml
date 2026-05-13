@@ -1,5 +1,5 @@
 # ETF data refresh against Supabase + EODHD
-# Schedules: weekly return updates, monthly fundamentals + returns.
+# Schedules: daily return updates (Mon-Fri after US market close), monthly fundamentals + returns.
 # Manual: optional discover (rebuilds data/etf-universe.json on the runner) then seeds.
 #
 # Repo secrets: EODHD_API_KEY, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -8,8 +8,8 @@ name: ETF data refresh
 
 on:
   schedule:
-    - cron: '0 22 * * 0' # Sunday 22:00 UTC — prices / returns
-    - cron: '0 2 1 * *' # 1st of month 02:00 UTC — fundamentals + prices
+    - cron: '0 22 * * 1-5' # Mon-Fri 22:00 UTC — daily prices / returns (after US market close)
+    - cron: '0 2 1 * *'    # 1st of month 02:00 UTC — fundamentals + prices
   workflow_dispatch:
     inputs:
       run_discover:
@@ -71,8 +71,8 @@ jobs:
             echo "Monthly run: fundamentals + prices"
             npm run seed:fundamentals
             npm run seed:prices
-          elif [ "$DOW" = "7" ] && [ "$HOUR" = "22" ]; then
-            echo "Weekly run: prices only"
+          elif [ "$HOUR" = "22" ] && [ "$DOW" -ge 1 ] && [ "$DOW" -le 5 ]; then
+            echo "Daily run (Mon-Fri): prices only"
             npm run seed:prices
           else
             echo "Schedule fired outside expected window (day=$DAY hour=$HOUR dow=$DOW); skipping."

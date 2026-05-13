@@ -12,28 +12,30 @@ export interface Returns {
 }
 
 /**
- * Zwraca najbliższą dostępną cenę dla podanej daty docelowej.
- * Zakładamy, że tablica `prices` jest posortowana od najstarszej do najnowszej daty.
+ * Zwraca ostatnią cenę zamknięcia na dzień docelowy lub wcześniej (≤ targetDate).
+ * Tablica `prices` musi być posortowana chronologicznie (najstarsza → najnowsza).
+ * Jeśli żaden bar nie wypada ≤ targetDate, zwraca najbliższy dostępny bar po dacie
+ * (fallback dla sytuacji, gdy historia zaczyna się po dacie docelowej).
  */
 function getClosestPrice(prices: EODPrice[], targetDate: Date): number | null {
   if (prices.length === 0) return null;
 
-  // Szukamy ceny z datą mniejszą lub równą dacie docelowej
-  let closestPrice = null;
-  let minDiff = Infinity;
+  const targetMs = targetDate.getTime();
+  let bestOnOrBefore: number | null = null;
+  let firstAfter: number | null = null;
+  let firstAfterDiff = Infinity;
 
   for (const price of prices) {
-    const priceDate = new Date(price.date);
-    const diff = Math.abs(targetDate.getTime() - priceDate.getTime());
-    
-    // Szukamy najbliższego dnia roboczego (różnica w czasie jest najmniejsza)
-    if (diff < minDiff) {
-      minDiff = diff;
-      closestPrice = price.adjusted_close;
+    const priceMs = new Date(price.date).getTime();
+    if (priceMs <= targetMs) {
+      bestOnOrBefore = price.adjusted_close;
+    } else if (firstAfter === null || priceMs - targetMs < firstAfterDiff) {
+      firstAfter = price.adjusted_close;
+      firstAfterDiff = priceMs - targetMs;
     }
   }
 
-  return closestPrice;
+  return bestOnOrBefore ?? firstAfter;
 }
 
 /**

@@ -117,6 +117,7 @@
       scrollbar-color: var(--border-color) var(--bg-color);
     }
   }
+
 }
 
 @layer components {

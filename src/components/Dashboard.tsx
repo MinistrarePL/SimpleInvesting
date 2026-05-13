@@ -164,28 +164,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
   const [infoColumn, setInfoColumn] = useState<TableInfoColumnKey | null>(null);
 
-  const tableCardRef = useRef<HTMLDivElement>(null);
-  const theadRef = useRef<HTMLTableSectionElement>(null);
-  const [theadOffset, setTheadOffset] = useState(0);
-
-  useEffect(() => {
-    const HEADER_H = 64;
-    const onScroll = () => {
-      const card = tableCardRef.current;
-      const thead = theadRef.current;
-      if (!card || !thead) { setTheadOffset(0); return; }
-      const cardRect = card.getBoundingClientRect();
-      const theadH = thead.offsetHeight;
-      if (cardRect.top < HEADER_H && cardRect.bottom > HEADER_H + theadH + 20) {
-        setTheadOffset(HEADER_H - cardRect.top);
-      } else {
-        setTheadOffset(0);
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
@@ -613,13 +591,13 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           </div>
         )}
 
-        <div ref={tableCardRef} className="bg-theme-surface rounded-xl shadow-sm border border-theme-border">
+        <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border">
           <div className="overflow-x-auto scrollbar-thumb-theme rounded-xl">
             <table className="w-full text-left border-collapse min-w-[1100px]">
-              <thead ref={theadRef} className="will-change-transform" style={{ transform: `translateY(${theadOffset}px)` }}>
+              <thead>
                 <tr className="border-b border-theme-border">
                   <th
-                    className="relative z-20 bg-theme-surface py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors shadow-[0_1px_0_0_var(--color-theme-border)]"
+                    className="bg-theme-surface py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors shadow-[0_1px_0_0_var(--color-theme-border)]"
                     onClick={() => handleSort('ticker')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -629,7 +607,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('category')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -639,7 +617,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1w')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -649,7 +627,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1m')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -659,7 +637,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1q')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -669,7 +647,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('return_1y')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -679,7 +657,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('currency')}
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -689,7 +667,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('total_assets')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -699,7 +677,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('expense_ratio')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -709,7 +687,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="relative z-20 bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('morningstar_rating')}
                   >
                     <span className="inline-flex items-center justify-center gap-1.5">
