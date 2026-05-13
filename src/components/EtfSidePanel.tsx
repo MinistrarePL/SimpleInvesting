@@ -6,6 +6,7 @@ import HighchartsReact from 'highcharts-react-official';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import type { EtfDetail, EtfRow } from '../types/etf';
 import { supabase } from './AuthModal';
+import { getFriendlyCategory } from '../lib/categoryMap';
 
 interface EtfSidePanelProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ function fmtPct(n: number | null | undefined, digits = 2) {
 }
 
 export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [chartType, setChartType] = useState<'line' | 'candle'>('line');
   const [chartRange, setChartRange] = useState<ChartRange>('1y');
   const [chartPoints, setChartPoints] = useState<ChartOHLCRow[]>([]);
@@ -135,7 +136,14 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     };
   }, [isOpen, etf?.ticker, etf?.exchange, chartRange]);
 
-  const d = detail || etf;
+  const d = detail ?? etf;
+
+  const panelDescription =
+    d == null
+      ? ''
+      : i18n.language?.startsWith('pl')
+        ? (d.description_pl || d.description) || ''
+        : d.description || '';
 
   const ohlcMs = useMemo(() => {
     const rows: number[][] = [];
@@ -330,10 +338,10 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
             </p>
           )}
 
-          {d.description && (
+          {panelDescription && (
             <section>
               <h3 className="text-lg font-semibold text-theme-text mb-2">{t('panel.description')}</h3>
-              <p className="text-sm text-theme-text-muted leading-relaxed whitespace-pre-wrap">{d.description}</p>
+              <p className="text-sm text-theme-text-muted leading-relaxed whitespace-pre-wrap">{panelDescription}</p>
             </section>
           )}
 
@@ -550,7 +558,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
               <dl className="divide-y divide-theme-border">
                 <div className="px-4 py-3 flex justify-between gap-4">
                   <dt className="text-sm font-medium text-theme-text-muted shrink-0">{t('table.exposure')}</dt>
-                  <dd className="text-sm font-semibold text-theme-text text-right">{d.category || 'N/A'}</dd>
+                  <dd className="text-sm font-semibold text-theme-text text-right">{getFriendlyCategory(d.category, i18n.language as 'pl' | 'en')}</dd>
                 </div>
                 <div className="px-4 py-3 flex justify-between">
                   <dt className="text-sm font-medium text-theme-text-muted">{t('table.currency')}</dt>

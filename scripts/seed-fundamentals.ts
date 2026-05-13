@@ -2,6 +2,9 @@
  * Pobiera dane fundamentalne z EODHD i zapisuje do Supabase (tabela etfs + etf_sectors, etf_regions, etf_top_holdings).
  * Wymaga aktywnego planu z dostępem do Fundamentals API.
  *
+ * Ocena Morningstar (`morningstar_rating`): z bloku `ETF_Data.MorningStar` (EODHD — wielkie „S”)
+ * oraz zapasowych pól; endpoint najpierw `/api/v1.1/fundamentals/`, przy 404 — `/api/fundamentals/`.
+ *
  * Wejście: data/etf-universe.json (z scripts/discover-etfs.ts)
  *
  * Opcjonalnie:
@@ -40,6 +43,65 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * Ocena Morningstar (1–5 gwiazdek) w odpowiedzi EODHD bywa pod różnymi kluczami lub jako tekst.
+ * W odpowiedzi EODHD blok jest pod kluczem `MorningStar` (wielkie „S”), nie `Morningstar`.
+ */
+function pickMorningstarRating(
+  etfData: Record<string, unknown>,
+  morningstar: Record<string, unknown>,
+  general: Record<string, unknown>,
+  performance: Record<string, unknown>,
+  highlights: Record<string, unknown>
+): number | null {
+  const starFromString = (s: string): number | null => {
+    const t = s.trim();
+    if (!t) return null;
+    const starGlyphs = (t.match(/★|⭐|\u2605/g) || []).length;
+    if (starGlyphs >= 1 && starGlyphs <= 5) return starGlyphs;
+    const word = t.match(/\b([1-5])\s*(?:star|stars|gwiazd|gw\.?)\b/i);
+    if (word) return Number(word[1]);
+    return null;
+  };
+
+  const fromUnknown = (v: unknown): number | null => {
+    if (v == null || v === '') return null;
+    if (typeof v === 'string') {
+      const parsed = starFromString(v);
+      if (parsed != null) return parsed;
+    }
+    const n = num(v);
+    if (n == null) return null;
+    const rounded = Math.round(n);
+    if (rounded >= 1 && rounded <= 5) return rounded;
+    return null;
+  };
+
+  const candidates: unknown[] = [
+    morningstar.Ratio,
+    morningstar.Rating,
+    morningstar.Morningstar_Rating,
+    morningstar.Mstar_Rating,
+    morningstar.Stars,
+    morningstar.Star_Rating,
+    performance.Morningstar_Rating,
+    performance.Mstar_Rating,
+    highlights.Morningstar_Rating,
+    highlights.MorningstarRating,
+    etfData.Morningstar_Rating,
+    etfData.MorningstarRating,
+    general.Morningstar_Rating,
+    general.MorningstarRating,
+  ];
+
+  for (const v of candidates) {
+    const r = fromUnknown(v);
+    if (r != null) return r;
+  }
+
+  return null;
+}
+
 function parseDate(v: unknown): string | null {
   if (!v || typeof v !== 'string') return null;
   const d = new Date(v);
@@ -60,13 +122,22 @@ function pickExpenseRatio(etfData: Record<string, unknown>): number | null {
 }
 
 async function fetchFundamentals(fullSymbol: string): Promise<Record<string, unknown> | null> {
-  const url = `${EODHD_BASE}/fundamentals/${fullSymbol}?api_token=${API_KEY}&fmt=json`;
-  const res = await fetch(url);
-  if (!res.ok) {
+  const sym = encodeURIComponent(fullSymbol);
+  const urls = [
+    `${EODHD_BASE}/v1.1/fundamentals/${sym}?api_token=${API_KEY}&fmt=json`,
+    `${EODHD_BASE}/fundamentals/${sym}?api_token=${API_KEY}&fmt=json`,
+  ];
+  for (let i = 0; i < urls.length; i++) {
+    const url = urls[i]!;
+    const res = await fetch(url);
+    if (res.ok) {
+      return (await res.json()) as Record<string, unknown>;
+    }
+    if (res.status === 404 && i === 0) continue;
     console.warn(`  fundamentals ${fullSymbol}: HTTP ${res.status}`);
     return null;
   }
-  return (await res.json()) as Record<string, unknown>;
+  return null;
 }
 
 async function replaceChildRows(
@@ -179,9 +250,10 @@ async function main() {
 
     const general = (data.General || {}) as Record<string, unknown>;
     const technicals = (data.Technicals || {}) as Record<string, unknown>;
+    const highlights = (data.Highlights || {}) as Record<string, unknown>;
     const etfData = (data.ETF_Data || {}) as Record<string, unknown>;
     const performance = (etfData.Performance || {}) as Record<string, unknown>;
-    const morningstar = (etfData.Morningstar || {}) as Record<string, unknown>;
+    const morningstar = (etfData.MorningStar || etfData.Morningstar || {}) as Record<string, unknown>;
 
     const retYtd = num(performance.Returns_YTD) ?? num(etfData.Returns_YTD);
     const ret3y = num(performance.Returns_3Y) ?? num(etfData.Returns_3Y);
@@ -190,7 +262,8 @@ async function main() {
 
     const name = (general.Name as string) || e.name || e.code;
     const category = (general.Category as string) || null;
-    const description = (general.Description as string) || null;
+    const rawDesc = (general.Description as string) || null;
+    const hasUsefulDesc = rawDesc && rawDesc !== 'NA' && rawDesc !== 'N/A' && rawDesc.trim().length > 5;
     const currency = (general.CurrencyCode as string) || e.currency || null;
     const isin = (etfData.ISIN as string) || null;
     const companyName = (etfData.Company_Name as string) || null;
@@ -201,18 +274,15 @@ async function main() {
     const yieldTtm = num(etfData.Yield);
     const holdingsCount = num(etfData.Holdings_Count) != null ? Math.round(num(etfData.Holdings_Count)!) : null;
 
-    let msRating: number | null = num(morningstar.Ratio);
-    if (msRating != null) {
-      msRating = Math.round(msRating);
-      if (msRating < 1 || msRating > 5) msRating = null;
-    }
+    const msRating = pickMorningstarRating(etfData, morningstar, general, performance, highlights);
 
-    const row = {
+    // Opisy: description (EN) tylko gdy EODHD ma sensowny tekst.
+    // description_pl nie jest ustawiane tutaj — pozostaje wygenerowany przez scripts/generate-descriptions.ts.
+    const row: Record<string, unknown> = {
       ticker: e.code,
       exchange: e.exchange,
       name,
       category,
-      description,
       currency,
       isin,
       company_name: companyName,
@@ -236,6 +306,10 @@ async function main() {
       week_52_low: num(technicals['52WeekLow']),
       fundamentals_updated: new Date().toISOString(),
     };
+
+    if (hasUsefulDesc) {
+      row.description = rawDesc;
+    }
 
     const { data: upserted, error } = await supabase
       .from('etfs')

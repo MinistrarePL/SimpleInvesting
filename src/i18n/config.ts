@@ -21,6 +21,34 @@ const resources = {
         q1: '1 Kwartał',
         y1: '1 Rok',
         noData: 'Brak danych',
+        rowsPerPage: 'Wierszy na stronę',
+        showingRange: 'Wyświetlanie {{from}}–{{to}} z {{total}}',
+        pageOf: 'Strona {{current}} z {{total}}',
+        prevPage: 'Poprzednia strona',
+        nextPage: 'Następna strona',
+        infoAria: 'Wyjaśnienie kolumny:',
+        info: {
+          name:
+            'ETF (Exchange-Traded Fund) to fundusz inwestycyjny notowany na giełdzie, który odwzorowuje wybrany indeks, sektor lub klasę aktywów. Kupujesz go jak zwykłą akcję, a w zamian dostajesz ekspozycję na dziesiątki lub setki spółek naraz. Nazwa i ticker pomagają szybko zidentyfikować fundusz.',
+          exposure:
+            'Kategoria mówi Ci, w co dany ETF inwestuje — np. w akcje z USA, obligacje europejskie czy surowce. Dzięki niej szybko zrozumiesz, na jaki rynek lub sektor stawia fundusz.',
+          exchange:
+            'Giełda, na której ETF jest notowany i możesz go kupić. Przykłady: XETRA (Niemcy), LSE (Londyn), NYSE (Nowy Jork). Giełda może mieć wpływ na walutę handlu i dostępność w Twoim domu maklerskim.',
+          currency:
+            'Waluta, w której ETF jest wyceniany i notowany na giełdzie. Jeśli Twoje konto działa w PLN, a ETF jest w USD, to zmiana kursu walut też wpływa na Twój wynik.',
+          aum:
+            'AUM (Assets Under Management) to łączna wartość aktywów zarządzanych przez fundusz. Im większy AUM, tym zazwyczaj ETF jest bardziej płynny (łatwiejszy do kupna i sprzedaży) i mniej podatny na zamknięcie.',
+          ter:
+            'TER (Total Expense Ratio) to roczny koszt zarządzania funduszem wyrażony w procentach. Np. TER 0,20% oznacza, że z każdego zainwestowanego 1000 zł rocznie zostanie pobrane 2 zł. Niższy TER = niższe koszty dla Ciebie.',
+          ms:
+            'Ocena Morningstar (od 1 do 5 gwiazdek) porównuje wyniki funduszu z podobnymi funduszami, uwzględniając ryzyko. 5 gwiazdek oznacza, że ETF wypadł najlepiej w swojej kategorii na tle ryzyka. To nie jest rekomendacja — to historyczne porównanie.',
+          w1:
+            'Zmiana ceny ETF w ciągu ostatniego tygodnia wyrażona w procentach. Wartość dodatnia (zielona) oznacza wzrost, ujemna (czerwona) — spadek.',
+          m1: 'Zmiana ceny ETF w ciągu ostatniego miesiąca wyrażona w procentach.',
+          q1: 'Zmiana ceny ETF w ciągu ostatnich 3 miesięcy (kwartał) wyrażona w procentach.',
+          y1:
+            'Zmiana ceny ETF w ciągu ostatniego roku wyrażona w procentach. To jeden z najczęściej używanych wskaźników do oceny wyników funduszu.',
+        },
       },
       search: {
         placeholder: 'Filtruj po nazwie, symbolu, kategorii lub giełdzie…',
@@ -122,6 +150,34 @@ const resources = {
         q1: '1 Quarter',
         y1: '1 Year',
         noData: 'No data',
+        rowsPerPage: 'Rows per page',
+        showingRange: 'Showing {{from}}–{{to}} of {{total}}',
+        pageOf: 'Page {{current}} of {{total}}',
+        prevPage: 'Previous page',
+        nextPage: 'Next page',
+        infoAria: 'Column explanation:',
+        info: {
+          name:
+            'An ETF (Exchange-Traded Fund) is an investment fund traded on a stock exchange that tracks a specific index, sector, or asset class. You buy it like a regular stock, but gain exposure to dozens or even hundreds of companies at once. The name and ticker help you quickly identify the fund.',
+          exposure:
+            'The category tells you what the ETF invests in — for example, US equities, European bonds, or commodities. It helps you quickly understand which market or sector the fund targets.',
+          exchange:
+            'The stock exchange where the ETF is listed and where you can buy it. Examples: XETRA (Germany), LSE (London), NYSE (New York). The exchange affects the trading currency and availability at your broker.',
+          currency:
+            'The currency in which the ETF is priced and traded on the exchange. If your account is in a different currency, exchange rate fluctuations will also affect your returns.',
+          aum:
+            'AUM (Assets Under Management) is the total value of assets held by the fund. A larger AUM generally means better liquidity (easier to buy and sell) and a lower risk of the fund being closed.',
+          ter:
+            'TER (Total Expense Ratio) is the annual management fee expressed as a percentage. For example, a TER of 0.20% means you pay $2 per year for every $1,000 invested. A lower TER means lower costs for you.',
+          ms:
+            'The Morningstar rating (1 to 5 stars) compares a fund\'s risk-adjusted returns against similar funds. 5 stars means the ETF performed best in its category relative to risk. It is a historical comparison, not a buy recommendation.',
+          w1:
+            'The ETF\'s price change over the last week, shown as a percentage. A positive value (green) means a gain, negative (red) means a loss.',
+          m1: 'The ETF\'s price change over the last month, shown as a percentage.',
+          q1: 'The ETF\'s price change over the last 3 months (quarter), shown as a percentage.',
+          y1:
+            'The ETF\'s price change over the last year, shown as a percentage. This is one of the most common metrics for evaluating fund performance.',
+        },
       },
       search: {
         placeholder: 'Filter by name, symbol, category, or exchange…',

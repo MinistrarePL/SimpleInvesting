@@ -1,10 +1,25 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Moon, Sun, Globe, Search, User, LogOut, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import {
+  Moon,
+  Sun,
+  Globe,
+  Search,
+  User,
+  LogOut,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  X,
+} from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
 import AuthModal, { supabase } from './AuthModal';
 import type { EtfRow } from '../types/etf';
+import { getFriendlyCategory } from '../lib/categoryMap';
 
 type SortKey =
   | 'ticker'
@@ -19,6 +34,23 @@ type SortKey =
   | 'return_1q'
   | 'return_1y';
 type SortDir = 'asc' | 'desc';
+
+/** Klucze mapujące na `table.*` i `table.info.*` w i18n */
+type TableInfoColumnKey =
+  | 'name'
+  | 'exposure'
+  | 'exchange'
+  | 'currency'
+  | 'aum'
+  | 'ter'
+  | 'ms'
+  | 'w1'
+  | 'm1'
+  | 'q1'
+  | 'y1';
+
+const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const;
+type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 interface DashboardProps {
   initialEtfs: EtfRow[];
@@ -38,8 +70,13 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
+  const [pageSize, setPageSize] = useState<PageSizeOption>(100);
+  const [pageIndex, setPageIndex] = useState(0);
+
   // Stan dla bocznego panelu
   const [selectedEtf, setSelectedEtf] = useState<EtfRow | null>(null);
+
+  const [infoColumn, setInfoColumn] = useState<TableInfoColumnKey | null>(null);
 
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
@@ -66,6 +103,15 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!infoColumn) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInfoColumn(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [infoColumn]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -120,6 +166,25 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     });
   }, [etfs, searchQuery, sortKey, sortDir]);
 
+  const filteredCount = filteredEtfs.length;
+  const totalPages = filteredCount === 0 ? 1 : Math.ceil(filteredCount / pageSize);
+
+  useEffect(() => {
+    setPageIndex((i) => Math.min(i, Math.max(0, totalPages - 1)));
+  }, [totalPages]);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [searchQuery, sortKey, sortDir]);
+
+  const paginatedEtfs = useMemo(() => {
+    const start = pageIndex * pageSize;
+    return filteredEtfs.slice(start, start + pageSize);
+  }, [filteredEtfs, pageIndex, pageSize]);
+
+  const rangeFrom = filteredCount === 0 ? 0 : pageIndex * pageSize + 1;
+  const rangeTo = filteredCount === 0 ? 0 : Math.min(filteredCount, (pageIndex + 1) * pageSize);
+
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
       if (sortDir === 'asc') {
@@ -139,6 +204,20 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     if (sortDir === 'asc') return <ChevronUp className="w-3.5 h-3.5" />;
     return <ChevronDown className="w-3.5 h-3.5" />;
   };
+
+  const ColumnInfoBtn = ({ col }: { col: TableInfoColumnKey }) => (
+    <button
+      type="button"
+      className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors shrink-0"
+      aria-label={`${t('table.infoAria')} ${t(`table.${col}`)}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setInfoColumn(col);
+      }}
+    >
+      <Info className="w-3.5 h-3.5" strokeWidth={2} />
+    </button>
+  );
 
   // Inicjalizacja motywu na podstawie localStorage lub preferencji systemowych
   useEffect(() => {
@@ -305,6 +384,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center gap-1.5">
                       {t('table.name')}
                       <SortIcon column="ticker" />
+                      <ColumnInfoBtn col="name" />
                     </span>
                   </th>
                   <th
@@ -314,6 +394,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center gap-1.5">
                       {t('table.exposure')}
                       <SortIcon column="category" />
+                      <ColumnInfoBtn col="exposure" />
                     </span>
                   </th>
                   <th
@@ -323,6 +404,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center gap-1.5">
                       {t('table.exchange')}
                       <SortIcon column="exchange" />
+                      <ColumnInfoBtn col="exchange" />
                     </span>
                   </th>
                   <th
@@ -332,6 +414,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center gap-1.5">
                       {t('table.currency')}
                       <SortIcon column="currency" />
+                      <ColumnInfoBtn col="currency" />
                     </span>
                   </th>
                   <th
@@ -341,6 +424,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.aum')}
                       <SortIcon column="total_assets" />
+                      <ColumnInfoBtn col="aum" />
                     </span>
                   </th>
                   <th
@@ -350,6 +434,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.ter')}
                       <SortIcon column="expense_ratio" />
+                      <ColumnInfoBtn col="ter" />
                     </span>
                   </th>
                   <th
@@ -359,6 +444,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-center gap-1.5">
                       {t('table.ms')}
                       <SortIcon column="morningstar_rating" />
+                      <ColumnInfoBtn col="ms" />
                     </span>
                   </th>
                   <th
@@ -368,6 +454,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.w1')}
                       <SortIcon column="return_1w" />
+                      <ColumnInfoBtn col="w1" />
                     </span>
                   </th>
                   <th
@@ -377,6 +464,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.m1')}
                       <SortIcon column="return_1m" />
+                      <ColumnInfoBtn col="m1" />
                     </span>
                   </th>
                   <th
@@ -386,6 +474,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.q1')}
                       <SortIcon column="return_1q" />
+                      <ColumnInfoBtn col="q1" />
                     </span>
                   </th>
                   <th
@@ -395,19 +484,20 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     <span className="inline-flex items-center justify-end gap-1.5">
                       {t('table.y1')}
                       <SortIcon column="return_1y" />
+                      <ColumnInfoBtn col="y1" />
                     </span>
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border">
-                {filteredEtfs.length === 0 ? (
+                {filteredCount === 0 ? (
                   <tr>
                     <td colSpan={11} className="py-8 text-center text-theme-text-muted">
                       {t('table.noData')}
                     </td>
                   </tr>
                 ) : (
-                  filteredEtfs.map((etf) => (
+                  paginatedEtfs.map((etf) => (
                     <tr 
                       key={etf.id} 
                       onClick={() => setSelectedEtf(etf)}
@@ -423,7 +513,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       </td>
                       <td className="py-4 px-6">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
-                          {etf.category || 'N/A'}
+                          {getFriendlyCategory(etf.category, i18n.language as 'pl' | 'en')}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-xs font-semibold text-theme-text-muted whitespace-nowrap">
@@ -459,8 +549,94 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               </tbody>
             </table>
           </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-theme-border px-4 py-3 bg-theme-bg/30">
+            <p className="text-sm text-theme-text-muted order-2 sm:order-1">
+              {t('table.showingRange', { from: rangeFrom, to: rangeTo, total: filteredCount })}
+              <span className="hidden sm:inline"> · </span>
+              <span className="block sm:inline">{t('table.pageOf', { current: pageIndex + 1, total: totalPages })}</span>
+            </p>
+            <div className="flex flex-wrap items-center gap-3 order-1 sm:order-2 sm:justify-end">
+              <label className="flex items-center gap-2 text-sm text-theme-text-muted whitespace-nowrap">
+                <span>{t('table.rowsPerPage')}</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const v = Number(e.target.value) as PageSizeOption;
+                    if (PAGE_SIZE_OPTIONS.includes(v)) {
+                      setPageSize(v);
+                      setPageIndex(0);
+                    }
+                  }}
+                  className="rounded-lg border border-theme-border bg-theme-surface text-theme-text text-sm py-1.5 pl-2 pr-8 focus:outline-none focus:ring-2 focus:ring-theme-primary"
+                >
+                  {PAGE_SIZE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label={t('table.prevPage')}
+                  disabled={pageIndex <= 0}
+                  onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
+                  className="p-2 rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={t('table.nextPage')}
+                  disabled={pageIndex >= totalPages - 1 || filteredCount === 0}
+                  onClick={() => setPageIndex((i) => Math.min(totalPages - 1, i + 1))}
+                  className="p-2 rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Wyjaśnienia nagłówków tabeli */}
+      {infoColumn && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          role="presentation"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm border-0 cursor-default"
+            aria-label={t('panel.close')}
+            onClick={() => setInfoColumn(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="column-info-title"
+            className="relative z-[1] max-w-md w-full rounded-xl border border-theme-border bg-theme-surface p-5 shadow-2xl text-theme-text text-left"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="absolute top-3 right-3 p-2 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+              aria-label={t('panel.close')}
+              onClick={() => setInfoColumn(null)}
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 id="column-info-title" className="font-bold text-lg pr-10 mb-3 text-theme-text">
+              {t(`table.${infoColumn}`)}
+            </h3>
+            <p className="text-sm leading-relaxed text-theme-text-muted">{t(`table.info.${infoColumn}`)}</p>
+          </div>
+        </div>
+      )}
 
       {/* Boczny panel ze szczegółami ETF */}
       <EtfSidePanel 

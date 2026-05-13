@@ -44,11 +44,14 @@ All commands are run from the root of the project, from a terminal:
 ## ETF data (EODHD + Supabase)
 
 1. Apply SQL: run [`supabase-setup.sql`](supabase-setup.sql) for a new project, or [`supabase-migration-etfs-extended.sql`](supabase-migration-etfs-extended.sql) on an existing DB that already had the old `etfs` table.
-2. `.env`: `EODHD_API_KEY`, `PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (scripts), plus anon URL/key for the app.
-3. **Discover** (`npm run discover:etfs`) → writes `data/etf-universe.json` using `exchange-symbol-list` + bulk EOD + history filter (`DISCOVER_MIN_EOD_DAYS` default **250**). Target exchanges: [`scripts/lib/constants.ts`](scripts/lib/constants.ts). Optional env: `DISCOVER_EXCHANGES=US`, `DISCOVER_MAX_ETFS=50`, etc. Needs an EODHD plan with **EOD + bulk** (e.g. All-In-One / All World Extended).
-4. **Fundamentals** (`npm run seed:fundamentals`) — reads `etf-universe.json`, calls Fundamentals API, upserts `etfs` + child tables. Optional: `SEED_FUNDAMENTALS_MAX=10`.
-5. **Prices** (`npm run seed:prices`) — EOD → `return_1w`…`return_1y` for all rows in `etfs`. Optional: `SEED_PRICES_MAX=20`.
-6. **Production chart** (`/api/chart`) — set `EODHD_API_KEY` in Netlify (server) so the dashboard panel can load real OHLC from EODHD.
+2. **Polish descriptions column:** on existing databases run [`supabase-migration-description-pl.sql`](supabase-migration-description-pl.sql) in Supabase SQL Editor (adds `description_pl`). Then run `npm run generate:descriptions` to fill Polish template descriptions for all ETFs.
+3. `.env`: `EODHD_API_KEY`, `PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` (scripts), plus anon URL/key for the app.
+4. **Discover** (`npm run discover:etfs`) → writes `data/etf-universe.json` using `exchange-symbol-list` + bulk EOD + history filter (`DISCOVER_MIN_EOD_DAYS` default **250**). Target exchanges: [`scripts/lib/constants.ts`](scripts/lib/constants.ts). Optional env: `DISCOVER_EXCHANGES=US`, `DISCOVER_MAX_ETFS=50`, etc. Needs an EODHD plan with **EOD + bulk** (e.g. All-In-One / All World Extended).
+5. **Fundamentals** (`npm run seed:fundamentals`) — reads `etf-universe.json`, calls Fundamentals API, upserts `etfs` + child tables. Optional: `SEED_FUNDAMENTALS_MAX=10`. Empty `description` / `NA` from EODHD does not overwrite existing generated descriptions.
+6. **Prices** (`npm run seed:prices`) — EOD → `return_1w`…`return_1y` for all rows in `etfs`. Optional: `SEED_PRICES_MAX=20`.
+7. **Cleanup** (`npm run cleanup:empty`) — removes ETFs with no fundamentals (`category` and `total_assets` both NULL), e.g. instruments missing from EODHD.
+8. **Descriptions** (`npm run generate:descriptions`) — fills missing EN descriptions and refreshes `description_pl` for all rows (requires migration step 2).
+9. **Production chart** (`/api/chart`) — set `EODHD_API_KEY` in Netlify (server) so the dashboard panel can load real OHLC from EODHD.
 
 **GitHub Actions:** [`.github/workflows/etf-refresh.yml`](.github/workflows/etf-refresh.yml) — weekly `seed:prices`, monthly `seed:fundamentals` + `seed:prices`. Add repo secrets: `EODHD_API_KEY`, `PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Use *Run workflow* with “Rebuild universe” / “Run fundamentals” when you want a full refresh.
 

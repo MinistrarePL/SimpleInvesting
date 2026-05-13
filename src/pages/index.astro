@@ -19,11 +19,12 @@ const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 const PAGE = 1000;
 let initialEtfs: Record<string, unknown>[] = [];
 for (let from = 0; ; from += PAGE) {
-  const { data: pageRows, error } = await supabase
-    .from('etfs')
-    .select('*')
-    .order('return_1y', { ascending: false })
-    .range(from, from + PAGE - 1);
+    const { data: pageRows, error } = await supabase
+      .from('etfs')
+      .select('*')
+      .order('return_1y', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
 
   if (error) {
     console.error('Błąd pobierania danych z Supabase:', error);

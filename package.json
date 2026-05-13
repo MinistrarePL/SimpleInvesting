@@ -12,7 +12,9 @@
     "astro": "astro",
     "discover:etfs": "tsx scripts/discover-etfs.ts",
     "seed:fundamentals": "tsx scripts/seed-fundamentals.ts",
-    "seed:prices": "tsx scripts/seed-prices.ts"
+    "seed:prices": "tsx scripts/seed-prices.ts",
+    "generate:descriptions": "tsx scripts/generate-descriptions.ts",
+    "cleanup:empty": "tsx scripts/cleanup-empty-etfs.ts"
   },
   "dependencies": {
     "@astrojs/netlify": "^7.0.8",

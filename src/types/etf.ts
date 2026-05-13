@@ -8,6 +8,8 @@ export interface EtfRow {
   category?: string | null;
   isin?: string | null;
   description?: string | null;
+  /** Krótki opis po polsku (Supabase description_pl) */
+  description_pl?: string | null;
   company_name?: string | null;
   domicile?: string | null;
   inception_date?: string | null;

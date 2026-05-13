@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.etfs (
     category VARCHAR(200),
     isin VARCHAR(20),
     description TEXT,
+    description_pl TEXT,
     company_name VARCHAR(200),
     domicile VARCHAR(100),
     inception_date DATE,
