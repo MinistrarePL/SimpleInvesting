@@ -3,6 +3,8 @@
  * Fallback: returns raw EODHD value when the category is not in the map.
  */
 
+import { inferEtfTheme } from './etfTheme';
+
 const CATEGORY_MAP: Record<string, { pl: string; en: string }> = {
   // ─── Equity: US Size & Style ──────────────────────────────────
   'Large Blend':                          { pl: 'Akcje USA – duże spółki (mieszane)',           en: 'US Large-Cap Blend Equities' },
@@ -261,7 +263,10 @@ const CATEGORY_MAP: Record<string, { pl: string; en: string }> = {
 export function getFriendlyCategory(
   rawCategory: string | null | undefined,
   lang: 'pl' | 'en',
+  name?: string | null,
 ): string {
+  const theme = inferEtfTheme(name, lang);
+  if (theme) return theme;
   if (!rawCategory) return 'N/A';
   const mapped = CATEGORY_MAP[rawCategory];
   if (mapped) return mapped[lang];

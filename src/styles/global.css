@@ -66,3 +66,33 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
+
+@layer components {
+  .btn-primary,
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-base font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none;
+    --tw-ring-offset-color: var(--surface-color);
+  }
+
+  .btn-primary {
+    @apply text-white shadow-sm bg-teal-600;
+  }
+  .btn-primary:hover {
+    @apply bg-teal-700;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-teal-600 text-teal-600;
+  }
+  .btn-secondary:hover {
+    background-color: color-mix(in srgb, var(--color-teal-600) 10%, transparent);
+    @apply border-teal-700 text-teal-700;
+  }
+  .dark .btn-secondary {
+    @apply text-teal-400 border-teal-500;
+  }
+  .dark .btn-secondary:hover {
+    background-color: color-mix(in srgb, var(--color-teal-500) 15%, transparent);
+    @apply text-teal-300 border-teal-400;
+  }
+}

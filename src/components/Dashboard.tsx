@@ -14,16 +14,17 @@ import {
   ChevronRight,
   Info,
   X,
+  SlidersHorizontal,
 } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
+import FiltersSidePanel from './FiltersSidePanel';
 import AuthModal, { supabase } from './AuthModal';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 
 type SortKey =
   | 'ticker'
-  | 'exchange'
   | 'category'
   | 'currency'
   | 'total_assets'
@@ -39,7 +40,6 @@ type SortDir = 'asc' | 'desc';
 type TableInfoColumnKey =
   | 'name'
   | 'exposure'
-  | 'exchange'
   | 'currency'
   | 'aum'
   | 'ter'
@@ -75,6 +75,8 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
   // Stan dla bocznego panelu
   const [selectedEtf, setSelectedEtf] = useState<EtfRow | null>(null);
+
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const [infoColumn, setInfoColumn] = useState<TableInfoColumnKey | null>(null);
 
@@ -124,7 +126,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       etf.ticker.toLowerCase().includes(query) ||
       etf.name.toLowerCase().includes(query) ||
       (etf.category && etf.category.toLowerCase().includes(query)) ||
-      (etf.exchange && etf.exchange.toLowerCase().includes(query)) ||
       (etf.currency && etf.currency.toLowerCase().includes(query))
     );
 
@@ -137,9 +138,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       if (sortKey === 'ticker') {
         valA = a.ticker.toLowerCase();
         valB = b.ticker.toLowerCase();
-      } else if (sortKey === 'exchange') {
-        valA = (a.exchange || '').toLowerCase();
-        valB = (b.exchange || '').toLowerCase();
       } else if (sortKey === 'category') {
         valA = (a.category || '').toLowerCase();
         valB = (b.category || '').toLowerCase();
@@ -338,12 +336,12 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                 <span className="hidden sm:inline">{t('auth.logout')}</span>
               </button>
             ) : (
-              <button 
+              <button
                 onClick={() => {
                   setAuthView('login');
                   setIsAuthModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors text-base font-bold shadow-sm"
+                className="btn-secondary"
               >
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">{t('auth.loginRegisterBtn')}</span>
@@ -356,9 +354,9 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       {/* Główna zawartość - Tabela */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Wyszukiwarka */}
-        <div className="mb-6 relative">
-          <div className="relative">
+        {/* Wyszukiwarka + Filtry */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-stretch">
+          <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-theme-text-muted" />
             </div>
@@ -370,6 +368,16 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <button
+            type="button"
+            onClick={() => setIsFiltersOpen(true)}
+            className="btn-primary shrink-0"
+            aria-haspopup="dialog"
+            aria-expanded={isFiltersOpen}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>{t('filters.openBtn')}</span>
+          </button>
         </div>
 
         <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
@@ -395,56 +403,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       {t('table.exposure')}
                       <SortIcon column="category" />
                       <ColumnInfoBtn col="exposure" />
-                    </span>
-                  </th>
-                  <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
-                    onClick={() => handleSort('exchange')}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      {t('table.exchange')}
-                      <SortIcon column="exchange" />
-                      <ColumnInfoBtn col="exchange" />
-                    </span>
-                  </th>
-                  <th
-                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
-                    onClick={() => handleSort('currency')}
-                  >
-                    <span className="inline-flex items-center gap-1.5">
-                      {t('table.currency')}
-                      <SortIcon column="currency" />
-                      <ColumnInfoBtn col="currency" />
-                    </span>
-                  </th>
-                  <th
-                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
-                    onClick={() => handleSort('total_assets')}
-                  >
-                    <span className="inline-flex items-center justify-end gap-1.5">
-                      {t('table.aum')}
-                      <SortIcon column="total_assets" />
-                      <ColumnInfoBtn col="aum" />
-                    </span>
-                  </th>
-                  <th
-                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
-                    onClick={() => handleSort('expense_ratio')}
-                  >
-                    <span className="inline-flex items-center justify-end gap-1.5">
-                      {t('table.ter')}
-                      <SortIcon column="expense_ratio" />
-                      <ColumnInfoBtn col="ter" />
-                    </span>
-                  </th>
-                  <th
-                    className="hidden lg:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
-                    onClick={() => handleSort('morningstar_rating')}
-                  >
-                    <span className="inline-flex items-center justify-center gap-1.5">
-                      {t('table.ms')}
-                      <SortIcon column="morningstar_rating" />
-                      <ColumnInfoBtn col="ms" />
                     </span>
                   </th>
                   <th
@@ -487,12 +445,52 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       <ColumnInfoBtn col="y1" />
                     </span>
                   </th>
+                  <th
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('currency')}
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {t('table.currency')}
+                      <SortIcon column="currency" />
+                      <ColumnInfoBtn col="currency" />
+                    </span>
+                  </th>
+                  <th
+                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('total_assets')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.aum')}
+                      <SortIcon column="total_assets" />
+                      <ColumnInfoBtn col="aum" />
+                    </span>
+                  </th>
+                  <th
+                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('expense_ratio')}
+                  >
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {t('table.ter')}
+                      <SortIcon column="expense_ratio" />
+                      <ColumnInfoBtn col="ter" />
+                    </span>
+                  </th>
+                  <th
+                    className="hidden lg:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    onClick={() => handleSort('morningstar_rating')}
+                  >
+                    <span className="inline-flex items-center justify-center gap-1.5">
+                      {t('table.ms')}
+                      <SortIcon column="morningstar_rating" />
+                      <ColumnInfoBtn col="ms" />
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme-border">
                 {filteredCount === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-8 text-center text-theme-text-muted">
+                    <td colSpan={10} className="py-8 text-center text-theme-text-muted">
                       {t('table.noData')}
                     </td>
                   </tr>
@@ -513,23 +511,8 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       </td>
                       <td className="py-4 px-6">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
-                          {getFriendlyCategory(etf.category, i18n.language as 'pl' | 'en')}
+                          {getFriendlyCategory(etf.category, i18n.language as 'pl' | 'en', etf.name)}
                         </span>
-                      </td>
-                      <td className="py-4 px-4 text-xs font-semibold text-theme-text-muted whitespace-nowrap">
-                        {etf.exchange || '—'}
-                      </td>
-                      <td className="py-4 px-4 text-sm font-medium text-theme-text-muted whitespace-nowrap">
-                        {etf.currency || '—'}
-                      </td>
-                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
-                        {formatAum(etf.total_assets)}
-                      </td>
-                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
-                        {formatTer(etf.expense_ratio)}
-                      </td>
-                      <td className="hidden lg:table-cell py-4 px-4 text-sm text-center">
-                        {renderStars(etf.morningstar_rating)}
                       </td>
                       <td className="py-4 px-6 text-right">
                         {renderReturn(etf.return_1w)}
@@ -542,6 +525,18 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       </td>
                       <td className="py-4 px-6 text-right">
                         {renderReturn(etf.return_1y)}
+                      </td>
+                      <td className="py-4 px-4 text-sm font-medium text-theme-text-muted whitespace-nowrap">
+                        {etf.currency || '—'}
+                      </td>
+                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                        {formatAum(etf.total_assets)}
+                      </td>
+                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                        {formatTer(etf.expense_ratio)}
+                      </td>
+                      <td className="hidden lg:table-cell py-4 px-4 text-sm text-center">
+                        {renderStars(etf.morningstar_rating)}
                       </td>
                     </tr>
                   ))
@@ -644,6 +639,9 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         onClose={() => setSelectedEtf(null)} 
         etf={selectedEtf} 
       />
+
+      {/* Boczny panel filtrów */}
+      <FiltersSidePanel isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
 
       {/* Modal logowania / rejestracji */}
       <AuthModal 

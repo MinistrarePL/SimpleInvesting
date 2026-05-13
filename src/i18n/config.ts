@@ -53,6 +53,11 @@ const resources = {
       search: {
         placeholder: 'Filtruj po nazwie, symbolu, kategorii lub giełdzie…',
       },
+      filters: {
+        openBtn: 'Filtry',
+        title: 'Filtry',
+        empty: 'Filtry pojawią się tutaj wkrótce. W tym panelu skonfigurujesz zaawansowane kryteria wyszukiwania funduszy.',
+      },
       panel: {
         close: 'Zamknij panel',
         chartLine: 'Liniowy',
@@ -181,6 +186,11 @@ const resources = {
       },
       search: {
         placeholder: 'Filter by name, symbol, category, or exchange…',
+      },
+      filters: {
+        openBtn: 'Filters',
+        title: 'Filters',
+        empty: 'Filters will appear here soon. This panel will host advanced search criteria for funds.',
       },
       panel: {
         close: 'Close panel',

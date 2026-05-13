@@ -7,6 +7,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import type { EtfDetail, EtfRow } from '../types/etf';
 import { supabase } from './AuthModal';
 import { getFriendlyCategory } from '../lib/categoryMap';
+import GlossaryText from './GlossaryText';
 
 interface EtfSidePanelProps {
   isOpen: boolean;
@@ -144,6 +145,8 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
       : i18n.language?.startsWith('pl')
         ? (d.description_pl || d.description) || ''
         : d.description || '';
+
+  const glossaryLang: 'pl' | 'en' = i18n.language?.startsWith('pl') ? 'pl' : 'en';
 
   const ohlcMs = useMemo(() => {
     const rows: number[][] = [];
@@ -341,13 +344,103 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
           {panelDescription && (
             <section>
               <h3 className="text-lg font-semibold text-theme-text mb-2">{t('panel.description')}</h3>
-              <p className="text-sm text-theme-text-muted leading-relaxed whitespace-pre-wrap">{panelDescription}</p>
+              <p className="text-sm text-theme-text-muted leading-relaxed whitespace-pre-wrap">
+                <GlossaryText text={panelDescription} lang={glossaryLang} />
+              </p>
             </section>
           )}
 
           <section>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h3 className="text-lg font-semibold text-theme-text">{t('panel.performance')}</h3>
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
+                  {RANGE_TABS.map(({ key, labelKey }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setChartRange(key)}
+                      className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border">
+                  <button
+                    type="button"
+                    onClick={() => setChartType('line')}
+                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    title={t('panel.chartLine')}
+                  >
+                    <LineChartIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartType('candle')}
+                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    title={t('panel.chartCandle')}
+                  >
+                    <CandlestickChart className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
+                <div className="text-theme-text-muted text-xs">{t('table.w1')}</div>
+                <div className="text-sm tabular-nums">{renderReturn(etf.return_1w)}</div>
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
+                <div className="text-theme-text-muted text-xs">{t('table.m1')}</div>
+                <div className="text-sm tabular-nums">{renderReturn(etf.return_1m)}</div>
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
+                <div className="text-theme-text-muted text-xs">{t('table.q1')}</div>
+                <div className="text-sm tabular-nums">{renderReturn(etf.return_1q)}</div>
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
+                <div className="text-theme-text-muted text-xs">{t('table.y1')}</div>
+                <div className="text-sm tabular-nums">{renderReturn(etf.return_1y)}</div>
+              </div>
+            </div>
+
+            <div className="relative h-80 w-full bg-theme-bg/50 rounded-xl p-4 border border-theme-border overflow-hidden">
+              <HighchartsReact
+                highcharts={Highcharts}
+                constructorType={'stockChart'}
+                options={chartOptions}
+                containerProps={{ style: { height: '100%', width: '100%' } }}
+              />
+              {chartFetch === 'loading' && (
+                <div className="absolute inset-0 flex items-center justify-center bg-theme-surface/70 text-sm text-theme-text-muted">
+                  {t('panel.chartLoading')}
+                </div>
+              )}
+              {chartFetch === 'error' && (
+                <div className="absolute bottom-2 left-2 right-2 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p>{t('panel.chartLoadError')}</p>
+                </div>
+              )}
+            </div>
+            {chartFetch === 'ok' && !ohlcMs.length && (
+              <p className="mt-2 text-xs text-theme-text-muted">{t('panel.chartEmpty')}</p>
+            )}
+          </section>
+
+          <section>
             <h3 className="text-lg font-semibold text-theme-text mb-4">{t('panel.keyFacts')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
+                <div className="text-theme-text-muted text-xs">{t('table.exposure')}</div>
+                <div className="font-medium text-theme-text">{getFriendlyCategory(d.category, glossaryLang, d.name)}</div>
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
+                <div className="text-theme-text-muted text-xs">{t('table.currency')}</div>
+                <div className="font-medium text-theme-text">{d.currency || '—'}</div>
+              </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.issuer')}</div>
                 <div className="font-medium text-theme-text">{d.company_name || '—'}</div>
@@ -389,36 +482,6 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
               </div>
             </div>
           </section>
-
-          {(d.returns_ytd != null ||
-            d.returns_3y != null ||
-            d.returns_5y != null ||
-            d.returns_10y != null ||
-            d.volatility_1y != null) && (
-            <section>
-              <h3 className="text-lg font-semibold text-theme-text mb-4">{t('panel.riskReturn')}</h3>
-              <div className="bg-theme-bg rounded-xl border border-theme-border overflow-hidden text-sm">
-                <dl className="divide-y divide-theme-border">
-                  <Row label={t('panel.retYtd')} value={fmtPct(d.returns_ytd)} />
-                  <Row label={t('panel.ret3y')} value={fmtPct(d.returns_3y)} />
-                  <Row label={t('panel.ret5y')} value={fmtPct(d.returns_5y)} />
-                  <Row label={t('panel.ret10y')} value={fmtPct(d.returns_10y)} />
-                  <Row label={t('panel.vol1y')} value={fmtPct(d.volatility_1y)} />
-                  <Row label={t('panel.vol3y')} value={fmtPct(d.volatility_3y)} />
-                  <Row label={t('panel.sharpe3y')} value={d.sharpe_3y != null ? d.sharpe_3y.toFixed(2) : '—'} />
-                  <Row label={t('panel.beta')} value={d.beta != null ? d.beta.toFixed(2) : '—'} />
-                  <Row
-                    label={t('panel.fiftyTwoWeek')}
-                    value={
-                      d.week_52_high != null && d.week_52_low != null
-                        ? `${d.week_52_low.toFixed(2)} – ${d.week_52_high.toFixed(2)}`
-                        : '—'
-                    }
-                  />
-                </dl>
-              </div>
-            </section>
-          )}
 
           {sectorChartData.length > 0 && (
             <section>
@@ -491,98 +554,6 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
             </section>
           )}
 
-          <section>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h3 className="text-lg font-semibold text-theme-text">{t('panel.performance')}</h3>
-              <div className="flex flex-wrap items-center gap-2 justify-end">
-                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
-                  {RANGE_TABS.map(({ key, labelKey }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setChartRange(key)}
-                      className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border">
-                  <button
-                    type="button"
-                    onClick={() => setChartType('line')}
-                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    title={t('panel.chartLine')}
-                  >
-                    <LineChartIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChartType('candle')}
-                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    title={t('panel.chartCandle')}
-                  >
-                    <CandlestickChart className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative h-80 w-full bg-theme-bg/50 rounded-xl p-4 border border-theme-border overflow-hidden">
-              <HighchartsReact
-                highcharts={Highcharts}
-                constructorType={'stockChart'}
-                options={chartOptions}
-                containerProps={{ style: { height: '100%', width: '100%' } }}
-              />
-              {chartFetch === 'loading' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-theme-surface/70 text-sm text-theme-text-muted">
-                  {t('panel.chartLoading')}
-                </div>
-              )}
-              {chartFetch === 'error' && (
-                <div className="absolute bottom-2 left-2 right-2 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
-                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                  <p>{t('panel.chartLoadError')}</p>
-                </div>
-              )}
-            </div>
-            {chartFetch === 'ok' && !ohlcMs.length && (
-              <p className="mt-2 text-xs text-theme-text-muted">{t('panel.chartEmpty')}</p>
-            )}
-          </section>
-
-          <section>
-            <h3 className="text-lg font-semibold text-theme-text mb-4">{t('panel.details')}</h3>
-            <div className="bg-theme-bg rounded-xl border border-theme-border overflow-hidden">
-              <dl className="divide-y divide-theme-border">
-                <div className="px-4 py-3 flex justify-between gap-4">
-                  <dt className="text-sm font-medium text-theme-text-muted shrink-0">{t('table.exposure')}</dt>
-                  <dd className="text-sm font-semibold text-theme-text text-right">{getFriendlyCategory(d.category, i18n.language as 'pl' | 'en')}</dd>
-                </div>
-                <div className="px-4 py-3 flex justify-between">
-                  <dt className="text-sm font-medium text-theme-text-muted">{t('table.currency')}</dt>
-                  <dd className="text-sm font-semibold text-theme-text">{d.currency || '—'}</dd>
-                </div>
-                <div className="px-4 py-3 flex justify-between">
-                  <dt className="text-sm font-medium text-theme-text-muted">{t('table.w1')}</dt>
-                  <dd className="text-sm">{renderReturn(etf.return_1w)}</dd>
-                </div>
-                <div className="px-4 py-3 flex justify-between">
-                  <dt className="text-sm font-medium text-theme-text-muted">{t('table.m1')}</dt>
-                  <dd className="text-sm">{renderReturn(etf.return_1m)}</dd>
-                </div>
-                <div className="px-4 py-3 flex justify-between">
-                  <dt className="text-sm font-medium text-theme-text-muted">{t('table.q1')}</dt>
-                  <dd className="text-sm">{renderReturn(etf.return_1q)}</dd>
-                </div>
-                <div className="px-4 py-3 flex justify-between">
-                  <dt className="text-sm font-medium text-theme-text-muted">{t('table.y1')}</dt>
-                  <dd className="text-sm">{renderReturn(etf.return_1y)}</dd>
-                </div>
-              </dl>
-            </div>
-          </section>
         </div>
       </div>
     </>

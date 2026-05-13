@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { loadEnv } from './lib/loadEnv.ts';
 import { sleep } from './lib/constants.ts';
 import { getFriendlyCategory } from '../src/lib/categoryMap.ts';
+import { inferEtfTheme } from '../src/lib/etfTheme.ts';
 
 const env = loadEnv();
 const SUPABASE_URL = env['PUBLIC_SUPABASE_URL'];
@@ -124,7 +125,9 @@ async function tryFetchJustEtfDescription(isin: string): Promise<string | null> 
   return null;
 }
 
-function categoryExposurePhraseEn(category: string | null): string {
+function categoryExposurePhraseEn(category: string | null, name?: string | null): string {
+  const themeEn = inferEtfTheme(name, 'en');
+  if (themeEn) return themeEn.toLowerCase();
   if (!category) return 'a diversified basket of assets';
 
   const map: Record<string, string> = {
@@ -245,17 +248,17 @@ function categoryExposurePhraseEn(category: string | null): string {
   return map[category] || 'a diversified basket of assets';
 }
 
-function categoryLabelPl(category: string | null): string {
-  if (!category) return 'zróżnicowany koszyk aktywów';
-  const label = getFriendlyCategory(category, 'pl');
-  return label === 'N/A' ? 'zróżnicowany koszyk aktywów' : label;
+function categoryLabelPl(category: string | null, name?: string | null): string {
+  const label = getFriendlyCategory(category, 'pl', name);
+  if (!label || label === 'N/A') return 'zróżnicowany koszyk aktywów';
+  return label;
 }
 
 function buildDescriptionFromData(etf: EtfWithRelations): string {
   const parts: string[] = [];
 
   const issuer = extractIssuer(etf.name, etf.company_name);
-  const categoryDesc = categoryExposurePhraseEn(etf.category);
+  const categoryDesc = categoryExposurePhraseEn(etf.category, etf.name);
 
   parts.push(`The ${etf.name} provides exposure to ${categoryDesc}.`);
 
@@ -310,7 +313,7 @@ function buildDescriptionPl(etf: EtfWithRelations): string {
   const parts: string[] = [];
 
   const issuer = extractIssuer(etf.name, etf.company_name);
-  const catPl = categoryLabelPl(etf.category);
+  const catPl = categoryLabelPl(etf.category, etf.name);
 
   parts.push(`Fundusz ETF „${etf.name}” oferuje ekspozycję na: ${catPl}.`);
 
