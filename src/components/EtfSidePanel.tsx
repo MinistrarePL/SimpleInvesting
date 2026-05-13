@@ -312,7 +312,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
       />
 
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-theme-surface border-l border-theme-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-2/3 lg:w-1/3 bg-theme-surface border-l border-theme-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex items-center justify-between p-6 border-b border-theme-border">
           <div>

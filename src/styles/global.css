@@ -67,6 +67,35 @@
   }
 }
 
+@layer utilities {
+  .scrollbar-theme {
+    transform: rotateX(180deg);
+  }
+  .scrollbar-theme > * {
+    transform: rotateX(180deg);
+  }
+  .scrollbar-theme::-webkit-scrollbar {
+    height: 8px;
+  }
+  .scrollbar-theme::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-radius: 4px;
+  }
+  .scrollbar-theme::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+  }
+  .scrollbar-theme::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted-color);
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    .scrollbar-theme {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) var(--bg-color);
+    }
+  }
+}
+
 @layer components {
   .btn-primary,
   .btn-secondary {
@@ -94,5 +123,63 @@
   .dark .btn-secondary:hover {
     background-color: color-mix(in srgb, var(--color-teal-500) 15%, transparent);
     @apply text-teal-300 border-teal-400;
+  }
+
+  /* Themed checkbox for filter panels */
+  .filter-checkbox {
+    @apply w-4 h-4 rounded border-2 appearance-none cursor-pointer shrink-0 transition-colors;
+    border-color: var(--border-color);
+    background-color: transparent;
+  }
+  .filter-checkbox:checked {
+    background-color: var(--color-teal-600);
+    border-color: var(--color-teal-600);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .filter-checkbox:focus-visible {
+    @apply outline-none ring-2 ring-teal-600 ring-offset-1;
+    --tw-ring-offset-color: var(--surface-color);
+  }
+  .dark .filter-checkbox {
+    border-color: var(--color-slate-600);
+  }
+  .dark .filter-checkbox:checked {
+    background-color: var(--color-teal-500);
+    border-color: var(--color-teal-500);
+  }
+
+  /* Themed range slider */
+  .filter-range {
+    @apply appearance-none h-2 rounded-full cursor-pointer;
+    background: var(--border-color);
+  }
+  .filter-range::-webkit-slider-thumb {
+    @apply appearance-none w-5 h-5 rounded-full border-2 border-white shadow-md;
+    background: var(--color-teal-600);
+  }
+  .filter-range::-moz-range-thumb {
+    @apply w-5 h-5 rounded-full border-2 border-white shadow-md;
+    background: var(--color-teal-600);
+  }
+  .filter-range:focus-visible {
+    @apply outline-none;
+  }
+  .filter-range:focus-visible::-webkit-slider-thumb {
+    @apply ring-2 ring-teal-600 ring-offset-1;
+    --tw-ring-offset-color: var(--surface-color);
+  }
+  .dark .filter-range {
+    background: var(--color-slate-600);
+  }
+  .dark .filter-range::-webkit-slider-thumb {
+    background: var(--color-teal-500);
+    border-color: var(--color-slate-800);
+  }
+  .dark .filter-range::-moz-range-thumb {
+    background: var(--color-teal-500);
+    border-color: var(--color-slate-800);
   }
 }

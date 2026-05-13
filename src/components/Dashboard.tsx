@@ -22,6 +22,7 @@ import FiltersSidePanel from './FiltersSidePanel';
 import AuthModal, { supabase } from './AuthModal';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
+import { applyFilters, createEmptyFilters, type ActiveFilters } from '../lib/etfFilters';
 
 type SortKey =
   | 'ticker'
@@ -77,6 +78,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [selectedEtf, setSelectedEtf] = useState<EtfRow | null>(null);
 
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<ActiveFilters>(() => createEmptyFilters());
 
   const [infoColumn, setInfoColumn] = useState<TableInfoColumnKey | null>(null);
 
@@ -119,15 +121,16 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     await supabase.auth.signOut();
   };
 
-  // Filtrowanie ETF-ów na podstawie wpisanego tekstu
+  // Filtrowanie ETF-ów na podstawie wpisanego tekstu + zaawansowanych filtrów
   const filteredEtfs = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    const filtered = etfs.filter((etf) =>
+    const text = etfs.filter((etf) =>
       etf.ticker.toLowerCase().includes(query) ||
       etf.name.toLowerCase().includes(query) ||
       (etf.category && etf.category.toLowerCase().includes(query)) ||
       (etf.currency && etf.currency.toLowerCase().includes(query))
     );
+    const filtered = applyFilters(text, filters);
 
     if (!sortKey) return filtered;
 
@@ -162,7 +165,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
       return sortDir === 'asc' ? cmp : -cmp;
     });
-  }, [etfs, searchQuery, sortKey, sortDir]);
+  }, [etfs, searchQuery, sortKey, sortDir, filters]);
 
   const filteredCount = filteredEtfs.length;
   const totalPages = filteredCount === 0 ? 1 : Math.ceil(filteredCount / pageSize);
@@ -173,7 +176,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
   useEffect(() => {
     setPageIndex(0);
-  }, [searchQuery, sortKey, sortDir]);
+  }, [searchQuery, sortKey, sortDir, filters]);
 
   const paginatedEtfs = useMemo(() => {
     const start = pageIndex * pageSize;
@@ -292,7 +295,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     <div className="min-h-screen bg-theme-bg text-theme-text transition-colors duration-300">
       {/* Header */}
       <header className="border-b border-theme-border bg-theme-surface sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -352,7 +355,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       </header>
 
       {/* Główna zawartość - Tabela */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Wyszukiwarka + Filtry */}
         <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-stretch">
@@ -381,8 +384,8 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         </div>
 
         <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto scrollbar-theme">
+            <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-b border-theme-border bg-theme-bg/50">
                   <th
@@ -456,7 +459,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('total_assets')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -466,7 +469,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="hidden md:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('expense_ratio')}
                   >
                     <span className="inline-flex items-center justify-end gap-1.5">
@@ -476,7 +479,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className="hidden lg:table-cell py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className="py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
                     onClick={() => handleSort('morningstar_rating')}
                   >
                     <span className="inline-flex items-center justify-center gap-1.5">
@@ -529,13 +532,13 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       <td className="py-4 px-4 text-sm font-medium text-theme-text-muted whitespace-nowrap">
                         {etf.currency || '—'}
                       </td>
-                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                      <td className="py-4 px-4 text-sm text-right text-theme-text tabular-nums">
                         {formatAum(etf.total_assets)}
                       </td>
-                      <td className="hidden md:table-cell py-4 px-4 text-sm text-right text-theme-text tabular-nums">
+                      <td className="py-4 px-4 text-sm text-right text-theme-text tabular-nums">
                         {formatTer(etf.expense_ratio)}
                       </td>
-                      <td className="hidden lg:table-cell py-4 px-4 text-sm text-center">
+                      <td className="py-4 px-4 text-sm text-center">
                         {renderStars(etf.morningstar_rating)}
                       </td>
                     </tr>
@@ -641,7 +644,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       />
 
       {/* Boczny panel filtrów */}
-      <FiltersSidePanel isOpen={isFiltersOpen} onClose={() => setIsFiltersOpen(false)} />
+      <FiltersSidePanel
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
+        filters={filters}
+        onChange={setFilters}
+        etfs={etfs}
+        filteredCount={filteredCount}
+      />
 
       {/* Modal logowania / rejestracji */}
       <AuthModal 
