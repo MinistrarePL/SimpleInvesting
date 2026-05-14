@@ -226,6 +226,28 @@ const resources = {
         legalMiddle: ' i ',
         privacyLink: 'politykę prywatności',
         mustAcceptLegal: 'Aby założyć konto, musisz zaakceptować regulamin i politykę prywatności.',
+        accountSettings: 'Ustawienia konta',
+        accountMenuAria: 'Menu konta użytkownika',
+        settingsTitle: 'Ustawienia konta',
+        currentEmail: 'Obecny adres e-mail',
+        newEmailField: 'Nowy adres e-mail',
+        saveEmail: 'Zapisz nowy adres e-mail',
+        emailChangeSuccess:
+          'Jeśli ustawiono potwierdzenie zmiany przez e-mail — sprawdź skrzynkę i kliknij link. W przeciwnym razie adres został zaktualizowany.',
+        repeatPassword: 'Powtórz nowe hasło',
+        changePassword: 'Zmiana hasła',
+        savePassword: 'Zapisz nowe hasło',
+        passwordsMismatch: 'Hasła nie są identyczne.',
+        passwordTooShort: 'Hasło musi mieć co najmniej 6 znaków.',
+        dangerZone: 'Strefa ryzyka',
+        deleteAccountTitle: 'Usuń konto',
+        deleteAccountWarning:
+          'Trwale usuwa Twoje konto i dane logowania w tej aplikacji. Tej operacji nie da się cofnąć.',
+        deleteConfirmLabel: 'Aby potwierdzić, wpisz dokładnie:',
+        deleteConfirmWord: 'USUŃ',
+        deleteAccountSubmit: 'Na zawsze usuń konto',
+        deleteSuccess: 'Konto zostało usunięte.',
+        deleteError: 'Nie udało się usunąć konta. Spróbuj ponownie lub skontaktuj się z pomocą.',
       }
     }
   },
@@ -453,6 +475,28 @@ const resources = {
         legalMiddle: ' and the ',
         privacyLink: 'privacy policy',
         mustAcceptLegal: 'You must accept the terms of service and privacy policy to create an account.',
+        accountSettings: 'Account settings',
+        accountMenuAria: 'User account menu',
+        settingsTitle: 'Account settings',
+        currentEmail: 'Current email address',
+        newEmailField: 'New email address',
+        saveEmail: 'Save new email',
+        emailChangeSuccess:
+          'If email change confirmation is enabled, check your inbox and confirm the link. Otherwise your email has been updated.',
+        repeatPassword: 'Repeat new password',
+        changePassword: 'Change password',
+        savePassword: 'Save new password',
+        passwordsMismatch: 'Passwords do not match.',
+        passwordTooShort: 'Password must be at least 6 characters.',
+        dangerZone: 'Danger zone',
+        deleteAccountTitle: 'Delete account',
+        deleteAccountWarning:
+          'Permanently deletes your account and sign-in identity for this app. This cannot be undone.',
+        deleteConfirmLabel: 'To confirm, type exactly:',
+        deleteConfirmWord: 'DELETE',
+        deleteAccountSubmit: 'Permanently delete account',
+        deleteSuccess: 'Your account has been deleted.',
+        deleteError: 'Could not delete account. Try again or contact support.',
       }
     }
   }

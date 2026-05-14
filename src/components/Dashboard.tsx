@@ -7,7 +7,6 @@ import {
   Globe,
   Search,
   User,
-  LogOut,
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
@@ -21,6 +20,8 @@ import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
 import FiltersSidePanel from './FiltersSidePanel';
 import AuthModal, { supabase } from './AuthModal';
+import AccountSettingsPanel from './AccountSettingsPanel';
+import UserMenu from './UserMenu';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import { applyFilters, classifyAum, classifyCost, createEmptyFilters, exposureKeyLabel, type ActiveFilters } from '../lib/etfFilters';
@@ -168,6 +169,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register' | 'reset' | 'update_password'>('login');
 
   // Nasłuchiwanie na zmiany stanu logowania w Supabase
@@ -514,14 +516,19 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
             {/* Przycisk Logowania / Profilu (Skrajnie po prawej) */}
             {session ? (
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-base font-medium text-theme-text-muted hover:text-red-500"
-                title={t('auth.logout')}
-              >
-                <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('auth.logout')}</span>
-              </button>
+              <>
+                <UserMenu
+                  session={session}
+                  onLogout={handleLogout}
+                  onOpenSettings={() => setIsAccountSettingsOpen(true)}
+                />
+                <AccountSettingsPanel
+                  isOpen={isAccountSettingsOpen}
+                  onClose={() => setIsAccountSettingsOpen(false)}
+                  session={session}
+                  onAccountDeleted={() => setSession(null)}
+                />
+              </>
             ) : (
               <button
                 onClick={() => {
