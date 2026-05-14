@@ -62,7 +62,8 @@ const resources = {
         },
       },
       search: {
-        placeholder: 'Filtruj po nazwie, symbolu, kategorii lub giełdzie…',
+        placeholder: 'Szukaj w tabeli',
+        clear: 'Wyczyść wyszukiwanie',
       },
       filters: {
         openBtn: 'Filtry',
@@ -311,7 +312,8 @@ const resources = {
         },
       },
       search: {
-        placeholder: 'Filter by name, symbol, category, or exchange…',
+        placeholder: 'Search the table',
+        clear: 'Clear search',
       },
       filters: {
         openBtn: 'Filters',

@@ -122,23 +122,23 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
         aria-modal="true"
         aria-labelledby="filters-panel-title"
       >
-        <div className="flex items-center justify-between p-6 border-b border-theme-border">
-          <h2 id="filters-panel-title" className="text-2xl font-bold text-theme-text flex items-center gap-3">
-            <SlidersHorizontal className="w-6 h-6 text-theme-primary" />
-            {t('filters.title')}
+        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-theme-border">
+          <h2 id="filters-panel-title" className="text-lg font-semibold text-theme-text flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+            <SlidersHorizontal className="w-5 h-5 text-theme-primary shrink-0" aria-hidden />
+            <span className="truncate">{t('filters.title')}</span>
             {activeGroups > 0 && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border shrink-0">
                 {t('filters.active', { count: activeGroups })}
               </span>
             )}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
+            className="p-1.5 shrink-0 rounded-lg hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
             title={t('panel.close')}
             aria-label={t('panel.close')}
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" aria-hidden />
           </button>
         </div>
 

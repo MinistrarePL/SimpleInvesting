@@ -162,19 +162,19 @@ export default function AccountSettingsPanel({
         aria-modal="true"
         aria-labelledby="account-settings-title"
       >
-        <div className="flex items-center justify-between p-6 border-b border-theme-border shrink-0">
-          <h2 id="account-settings-title" className="text-xl font-bold text-theme-text flex items-center gap-3">
-            <Settings className="w-6 h-6 text-theme-primary shrink-0" aria-hidden />
-            {t('auth.settingsTitle')}
+        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-theme-border shrink-0">
+          <h2 id="account-settings-title" className="text-lg font-semibold text-theme-text flex items-center gap-2 min-w-0">
+            <Settings className="w-5 h-5 text-theme-primary shrink-0" aria-hidden />
+            <span className="truncate">{t('auth.settingsTitle')}</span>
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
+            className="p-1.5 shrink-0 rounded-lg hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
             title={t('panel.close')}
             aria-label={t('panel.close')}
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" aria-hidden />
           </button>
         </div>
 
@@ -272,7 +272,7 @@ export default function AccountSettingsPanel({
           </section>
 
           <section className="border-t border-theme-border pt-6" aria-labelledby="section-delete">
-            <h3 id="section-delete" className="text-sm font-semibold text-red-600 dark:text-red-400 mb-2">
+            <h3 id="section-delete" className="text-sm font-semibold mb-2 text-[var(--danger-zone-heading)]">
               {t('auth.dangerZone')}
             </h3>
             <p className="text-sm text-theme-text-muted mb-4">{t('auth.deleteAccountWarning')}</p>
@@ -283,14 +283,14 @@ export default function AccountSettingsPanel({
               type="text"
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
-              className="block w-full px-3 py-2.5 border border-theme-border rounded-xl bg-theme-bg text-theme-text mb-3 focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="block w-full px-3 py-2.5 border border-theme-border rounded-xl bg-theme-bg text-theme-text mb-3 focus:outline-none focus:ring-2 focus:ring-[var(--danger-zone-ring)]"
               autoComplete="off"
             />
             <button
               type="button"
               disabled={loadingDelete || deleteConfirm.trim() !== confirmWord}
               onClick={() => void handleDelete()}
-              className="w-full py-2.5 px-4 rounded-xl border-2 border-red-600 bg-transparent text-red-600 dark:text-red-400 dark:border-red-500 font-semibold hover:bg-red-600/10 transition-colors disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-xl border-2 border-[var(--danger-zone-button-border)] bg-transparent font-semibold text-[var(--danger-zone-button-text)] transition-colors hover:bg-[var(--danger-zone-button-hover-bg)] disabled:opacity-50"
             >
               {loadingDelete ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('auth.deleteAccountSubmit')}
             </button>

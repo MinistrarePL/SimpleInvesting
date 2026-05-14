@@ -1,4 +1,8 @@
 @import "tailwindcss";
+
+/* Ręczny motyw: `class="dark"` na <html>; bez tego Tailwind domyślnie używa tylko `prefers-color-scheme`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "@fontsource/inter";
 
 @theme {
@@ -38,6 +42,12 @@
     --badge-border: color-mix(in srgb, var(--color-teal-500) 20%, transparent);
     --return-pos: var(--color-green-600);
     --return-neg: var(--color-red-600);
+
+    --danger-zone-heading: var(--color-red-600);
+    --danger-zone-button-text: var(--color-red-600);
+    --danger-zone-button-border: var(--color-red-600);
+    --danger-zone-ring: var(--color-red-600);
+    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-red-600) 11%, transparent);
   }
 
   .dark {
@@ -56,6 +66,13 @@
     --badge-border: transparent;
     --return-pos: var(--color-green-500);
     --return-neg: var(--color-red-500);
+
+    /* Danger zone — ciemny motyw: Tailwind red-500 */
+    --danger-zone-heading: var(--color-red-500);
+    --danger-zone-button-text: var(--color-red-500);
+    --danger-zone-button-border: var(--color-red-500);
+    --danger-zone-ring: var(--color-red-500);
+    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-red-500) 22%, transparent);
   }
 
   body {
@@ -116,6 +133,17 @@
       scrollbar-width: thin;
       scrollbar-color: var(--border-color) var(--bg-color);
     }
+  }
+
+  /* Ukryty poziomy scrollbar pod tabelą — widoczny pasek jest nad gridem ETFs. */
+  .scrollbar-x-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-x-hide::-webkit-scrollbar {
+    display: none;
+    height: 0;
+    width: 0;
   }
 
 }

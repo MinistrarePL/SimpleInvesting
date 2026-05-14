@@ -378,6 +378,55 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     return filteredEtfs.slice(start, start + pageSize);
   }, [filteredEtfs, pageIndex, pageSize]);
 
+  const tableHScrollRef = useRef<HTMLDivElement>(null);
+  const tableTopScrollRef = useRef<HTMLDivElement>(null);
+  const isHScrollSync = useRef(false);
+  const [hScrollMirrorWidth, setHScrollMirrorWidth] = useState(0);
+
+  useLayoutEffect(() => {
+    const bot = tableHScrollRef.current;
+    if (!bot) return;
+
+    const update = () => {
+      setHScrollMirrorWidth(bot.scrollWidth);
+    };
+
+    update();
+
+    const ro = new ResizeObserver(update);
+    ro.observe(bot);
+    const table = bot.querySelector('table');
+    if (table) ro.observe(table);
+    window.addEventListener('resize', update);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [paginatedEtfs, filteredCount, pageIndex, pageSize]);
+
+  const onTopTableHScroll = useCallback(() => {
+    const bot = tableHScrollRef.current;
+    const top = tableTopScrollRef.current;
+    if (!bot || !top || isHScrollSync.current) return;
+    isHScrollSync.current = true;
+    bot.scrollLeft = top.scrollLeft;
+    window.requestAnimationFrame(() => {
+      isHScrollSync.current = false;
+    });
+  }, []);
+
+  const onBottomTableHScroll = useCallback(() => {
+    const bot = tableHScrollRef.current;
+    const top = tableTopScrollRef.current;
+    if (!bot || !top || isHScrollSync.current) return;
+    isHScrollSync.current = true;
+    top.scrollLeft = bot.scrollLeft;
+    window.requestAnimationFrame(() => {
+      isHScrollSync.current = false;
+    });
+  }, []);
+
   const rangeFrom = filteredCount === 0 ? 0 : pageIndex * pageSize + 1;
   const rangeTo = filteredCount === 0 ? 0 : Math.min(filteredCount, (pageIndex + 1) * pageSize);
 
@@ -556,11 +605,21 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-text-muted focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary sm:text-sm transition-colors"
+              className={`block w-full pl-10 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-text-muted focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary sm:text-sm transition-colors ${searchQuery ? 'pr-10' : 'pr-3'}`}
               placeholder={t('search.placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            {searchQuery !== '' && (
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-theme-text-muted hover:text-theme-text rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary"
+                onClick={() => setSearchQuery('')}
+                aria-label={t('search.clear')}
+              >
+                <X className="h-5 w-5 shrink-0" aria-hidden />
+              </button>
+            )}
           </div>
           <button
             type="button"
@@ -598,8 +657,23 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           </div>
         )}
 
-        <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border">
-          <div className="overflow-x-auto scrollbar-thumb-theme rounded-xl">
+        <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
+          <div
+            ref={tableTopScrollRef}
+            onScroll={onTopTableHScroll}
+            className="overflow-x-auto scrollbar-thumb-theme border-b border-theme-border bg-theme-surface shrink-0"
+          >
+            <div
+              aria-hidden
+              className="h-px pointer-events-none shrink-0"
+              style={{ width: Math.max(hScrollMirrorWidth, 1) }}
+            />
+          </div>
+          <div
+            ref={tableHScrollRef}
+            onScroll={onBottomTableHScroll}
+            className="overflow-x-auto scrollbar-x-hide"
+          >
             <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
                 <tr className="border-b border-theme-border">
