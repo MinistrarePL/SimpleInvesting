@@ -146,6 +146,13 @@
     width: 0;
   }
 
+  /** Poziomy scroll dużej tabeli na touch — jeden kontener, mniej walki scrollLeft + lepszy momentum. */
+  .table-h-scroll-touch {
+    touch-action: pan-x pinch-zoom;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
 }
 
 @layer components {

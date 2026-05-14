@@ -337,7 +337,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
       />
 
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-1/2 max-w-[100vw] bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen && entered ? 'translate-x-0' : 'translate-x-full'} ${row ? '' : 'pointer-events-none'}`}
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-none lg:w-[min(50vw,42rem)] bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen && entered ? 'translate-x-0' : 'translate-x-full'} ${row ? '' : 'pointer-events-none'}`}
       >
         {row ? (
           <>

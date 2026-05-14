@@ -25,6 +25,7 @@ import AuthModal, { supabase } from './AuthModal';
 import AccountSettingsPanel from './AccountSettingsPanel';
 import UserMenu from './UserMenu';
 import HoverTooltip from './HoverTooltip';
+import { useIsMdBreakpointUp, useShowHoverPortalTooltips } from '../lib/pointerPreference';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import { applyFilters, classifyAum, classifyCost, createEmptyFilters, exposureKeyLabel, type ActiveFilters } from '../lib/etfFilters';
@@ -45,6 +46,7 @@ function PreciseHoverTip({
   className?: string;
   children: React.ReactNode;
 }) {
+  const showPortal = useShowHoverPortalTooltips();
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -57,24 +59,28 @@ function PreciseHoverTip({
   }, []);
 
   useLayoutEffect(() => {
-    if (!open) {
+    if (!showPortal || !open) {
       setCoords(null);
       return;
     }
     reposition();
     const id = requestAnimationFrame(reposition);
     return () => cancelAnimationFrame(id);
-  }, [open, reposition]);
+  }, [showPortal, open, reposition]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!showPortal || !open) return;
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     return () => {
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', reposition, true);
     };
-  }, [open, reposition]);
+  }, [showPortal, open, reposition]);
+
+  if (!showPortal) {
+    return <span className={className ?? ''}>{children}</span>;
+  }
 
   return (
     <>
@@ -140,6 +146,12 @@ const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const;
 type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
 const GRID_DENSITY_KEY = 'si.grid-density';
+/** Deprecated: był zapisywany w localStorage; czyszczone przy migracji na RDW. */
+const GRID_DENSITY_LS_OVERRIDE_KEY = 'si.grid-density-override';
+/** Ręczny wybór tylko do końca sesji zakładki — nie „przykleja” comfort z większego monitora na laptopie. */
+const GRID_DENSITY_SESSION_OVERRIDE_KEY = 'si.grid-density-session-override';
+/** Szerokość viewportu ≥ tej wartości ⇒ tryb comfort (auto). Poniżej ⇒ compact. */
+const GRID_COMFORT_MIN_WIDTH_PX = 1920;
 type GridDensity = 'comfort' | 'compact';
 
 interface DashboardProps {
@@ -149,9 +161,24 @@ interface DashboardProps {
 export default function Dashboard({ initialEtfs }: DashboardProps) {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [gridDensity, setGridDensity] = useState<GridDensity>('comfort');
+  const [viewportGridDensity, setViewportGridDensity] = useState<GridDensity>(() =>
+    typeof window !== 'undefined' &&
+    window.matchMedia(`(min-width: ${GRID_COMFORT_MIN_WIDTH_PX}px)`).matches
+      ? 'comfort'
+      : 'compact',
+  );
+  const [gridDensityOverride, setGridDensityOverride] = useState<GridDensity | null>(() => {
+    try {
+      const s = sessionStorage.getItem(GRID_DENSITY_SESSION_OVERRIDE_KEY);
+      if (s === 'compact' || s === 'comfort') return s;
+    } catch {
+      /* ignore */
+    }
+    return null;
+  });
 
-  // Stan dla ETF-ów (pozwala na dodawanie nowych do tabeli bez odświeżania)
+  const isMdUp = useIsMdBreakpointUp();
+  const gridDensity: GridDensity = !isMdUp ? 'compact' : (gridDensityOverride ?? viewportGridDensity);
   const [etfs, setEtfs] = useState<EtfRow[]>(initialEtfs);
 
   // Stan dla wyszukiwarki (filtrowanie tabeli)
@@ -200,6 +227,16 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  /** Stare klucze w localStorage blokowały RDW (np. comfort z dużego ekranu na laptopie). */
+  useEffect(() => {
+    try {
+      localStorage.removeItem(GRID_DENSITY_KEY);
+      localStorage.removeItem(GRID_DENSITY_LS_OVERRIDE_KEY);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -465,13 +502,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       setTheme('light');
       document.documentElement.classList.remove('dark');
     }
+  }, []);
 
-    try {
-      const gd = localStorage.getItem(GRID_DENSITY_KEY);
-      if (gd === 'compact' || gd === 'comfort') setGridDensity(gd);
-    } catch {
-      /* ignore */
-    }
+  useLayoutEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${GRID_COMFORT_MIN_WIDTH_PX}px)`);
+    const sync = () => setViewportGridDensity(mq.matches ? 'comfort' : 'compact');
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
   }, []);
 
   const toggleTheme = () => {
@@ -487,15 +525,15 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   };
 
   const toggleGridDensity = () => {
-    setGridDensity((prev) => {
-      const next: GridDensity = prev === 'comfort' ? 'compact' : 'comfort';
-      try {
-        localStorage.setItem(GRID_DENSITY_KEY, next);
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
+    if (!isMdUp) return;
+    const effective = gridDensityOverride ?? viewportGridDensity;
+    const next: GridDensity = effective === 'comfort' ? 'compact' : 'comfort';
+    setGridDensityOverride(next);
+    try {
+      sessionStorage.setItem(GRID_DENSITY_SESSION_OVERRIDE_KEY, next);
+    } catch {
+      /* ignore */
+    }
   };
 
   const toggleLanguage = () => {
@@ -615,7 +653,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           </div>
 
           {/* Kontrolki (Język, Motyw, Logowanie) */}
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             
             <HoverTooltip
               tooltip={
@@ -625,7 +663,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               <button
                 type="button"
                 onClick={toggleLanguage}
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-sm font-medium"
+                className="flex items-center gap-1.5 px-2 py-2 rounded-md hover:bg-theme-bg transition-colors text-sm font-medium"
               >
                 <Globe className="w-4 h-4 text-theme-primary" />
                 <span className="uppercase">{i18n.language}</span>
@@ -644,6 +682,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               </button>
             </HoverTooltip>
 
+            {isMdUp && (
             <HoverTooltip
               tooltip={
                 gridDensity === 'comfort'
@@ -669,6 +708,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                 )}
               </button>
             </HoverTooltip>
+            )}
 
             <div className="w-px h-6 bg-theme-border mx-1 hidden sm:block"></div>
 
@@ -789,7 +829,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           <div
             ref={tableTopScrollRef}
             onScroll={onTopTableHScroll}
-            className="overflow-x-auto scrollbar-thumb-theme border-b border-theme-border bg-theme-surface shrink-0"
+            className="hidden md:block overflow-x-auto scrollbar-thumb-theme border-b border-theme-border bg-theme-surface shrink-0"
           >
             <div
               aria-hidden
@@ -800,7 +840,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           <div
             ref={tableHScrollRef}
             onScroll={onBottomTableHScroll}
-            className="overflow-x-auto scrollbar-x-hide"
+            className="overflow-x-auto scrollbar-x-hide table-h-scroll-touch"
           >
             <table className="w-full text-left border-collapse min-w-[1100px]">
               <thead>
@@ -1053,7 +1093,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       {/* Wyjaśnienia nagłówków tabeli */}
       {infoColumn && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center max-sm:p-0 sm:p-4"
           role="presentation"
         >
           <button
@@ -1066,7 +1106,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="column-info-title"
-            className="relative z-[1] max-w-md w-full rounded-xl border border-theme-border bg-theme-surface p-5 shadow-2xl text-theme-text text-left"
+            className="relative z-[1] max-sm:max-w-none max-sm:h-full max-sm:min-h-[100dvh] max-sm:rounded-none max-sm:overflow-y-auto w-full max-w-md sm:rounded-xl border border-theme-border bg-theme-surface max-sm:border-x-0 p-5 shadow-2xl text-theme-text text-left flex flex-col"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
           >

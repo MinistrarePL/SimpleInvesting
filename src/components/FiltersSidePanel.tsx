@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X, SlidersHorizontal, Info, Search } from 'lucide-react';
 import { drawerMotionClasses, overlayMotionClasses } from '../lib/panelMotion';
+import { useIsMdBreakpointUp } from '../lib/pointerPreference';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import {
@@ -118,7 +119,7 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
       />
 
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-2/5 max-w-[100vw] bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-none lg:w-2/5 bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="filters-panel-title"
@@ -291,7 +292,7 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
 function FilterGroup({ title, badge, info, children }: { title: string; badge?: number | null; info?: string; children: React.ReactNode }) {
   return (
     <section>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-3">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
         {badge != null && badge > 0 && (
           <span className="text-xs font-medium px-1.5 py-0.5 rounded-md bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">{badge}</span>
@@ -374,7 +375,7 @@ function CollapsibleMultiSelect({
 
   return (
     <section>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{title}</h3>
         {badge != null && badge > 0 && (
           <span className="text-xs font-medium px-1.5 py-0.5 rounded-md bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">{badge}</span>
@@ -442,6 +443,14 @@ const TOOLTIP_MAX_W = 300;
 const TOOLTIP_MARGIN = 8;
 
 function InfoTooltip({ text }: { text: string }) {
+  const mdUp = useIsMdBreakpointUp();
+  if (!mdUp) {
+    return <p className="w-full mt-1 text-xs text-theme-text-muted leading-snug">{text}</p>;
+  }
+  return <InfoTooltipPopover text={text} />;
+}
+
+function InfoTooltipPopover({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -449,7 +458,10 @@ function InfoTooltip({ text }: { text: string }) {
 
   const reposition = useCallback(() => {
     const btn = btnRef.current;
-    if (!btn || !open) { setPos(null); return; }
+    if (!btn || !open) {
+      setPos(null);
+      return;
+    }
     const rect = btn.getBoundingClientRect();
     const tipH = tooltipRef.current?.offsetHeight ?? 80;
 
@@ -466,7 +478,10 @@ function InfoTooltip({ text }: { text: string }) {
   }, [open]);
 
   useLayoutEffect(() => {
-    if (!open) { setPos(null); return; }
+    if (!open) {
+      setPos(null);
+      return;
+    }
     reposition();
     const id = requestAnimationFrame(reposition);
     return () => cancelAnimationFrame(id);
@@ -477,12 +492,20 @@ function InfoTooltip({ text }: { text: string }) {
     const handler = () => reposition();
     window.addEventListener('resize', handler);
     window.addEventListener('scroll', handler, true);
-    return () => { window.removeEventListener('resize', handler); window.removeEventListener('scroll', handler, true); };
+    return () => {
+      window.removeEventListener('resize', handler);
+      window.removeEventListener('scroll', handler, true);
+    };
   }, [open, reposition]);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); e.stopPropagation(); } };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        e.stopPropagation();
+      }
+    };
     const onClick = (e: MouseEvent | TouchEvent) => {
       const t = e.target as Node | null;
       if (t && (btnRef.current?.contains(t) || tooltipRef.current?.contains(t))) return;
@@ -491,22 +514,27 @@ function InfoTooltip({ text }: { text: string }) {
     window.addEventListener('keydown', onKey, true);
     document.addEventListener('mousedown', onClick);
     document.addEventListener('touchstart', onClick);
-    return () => { window.removeEventListener('keydown', onKey, true); document.removeEventListener('mousedown', onClick); document.removeEventListener('touchstart', onClick); };
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('touchstart', onClick);
+    };
   }, [open]);
 
-  const portal = typeof document !== 'undefined' && open && pos
-    ? createPortal(
-        <div
-          ref={tooltipRef}
-          role="tooltip"
-          className="fixed z-[200] rounded-lg border border-theme-border bg-theme-surface p-3 shadow-xl"
-          style={{ top: pos.top, left: pos.left, width: TOOLTIP_MAX_W, maxHeight: 'min(40vh, 240px)', overflowY: 'auto' }}
-        >
-          <p className="text-sm text-theme-text leading-snug">{text}</p>
-        </div>,
-        document.body,
-      )
-    : null;
+  const portal =
+    typeof document !== 'undefined' && open && pos
+      ? createPortal(
+          <div
+            ref={tooltipRef}
+            role="tooltip"
+            className="fixed z-[200] rounded-lg border border-theme-border bg-theme-surface p-3 shadow-xl"
+            style={{ top: pos.top, left: pos.left, width: TOOLTIP_MAX_W, maxHeight: 'min(40vh, 240px)', overflowY: 'auto' }}
+          >
+            <p className="text-sm text-theme-text leading-snug">{text}</p>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <>
@@ -514,7 +542,7 @@ function InfoTooltip({ text }: { text: string }) {
         ref={btnRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors"
+        className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors shrink-0"
         aria-label="Info"
       >
         <Info className="w-3.5 h-3.5" />
@@ -523,4 +551,3 @@ function InfoTooltip({ text }: { text: string }) {
     </>
   );
 }
-

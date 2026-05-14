@@ -122,8 +122,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-theme-surface w-full max-w-md rounded-2xl shadow-2xl border border-theme-border overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center max-sm:p-0 sm:p-4">
+        <div className="bg-theme-surface w-full max-sm:max-w-none max-sm:min-h-[100dvh] max-sm:rounded-none sm:max-w-md sm:rounded-2xl shadow-2xl border border-theme-border overflow-hidden flex flex-col max-sm:border-x-0">
           
           {/* Nagłówek */}
           <div className="flex items-start justify-between gap-3 p-6 border-b border-theme-border">
@@ -151,7 +151,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
           </div>
 
           {/* Formularz */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg border border-red-200 dark:border-red-800/50">
                 {error}

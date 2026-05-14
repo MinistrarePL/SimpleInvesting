@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useShowHoverPortalTooltips } from '../lib/pointerPreference';
 
-/** Ten sam wizualnie co PreciseHoverTip przy komórkach tabeli; tylko mysz — bez dodatkowej zatrzymki tabulatora. */
+/** Hover + portal nad body; na touch / mobile tylko `children` (bez portalu — unikamy „zacinania”). */
 export default function HoverTooltip({
   tooltip,
   className,
@@ -12,6 +13,7 @@ export default function HoverTooltip({
   className?: string;
   children: React.ReactNode;
 }) {
+  const showPortal = useShowHoverPortalTooltips();
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
@@ -24,24 +26,28 @@ export default function HoverTooltip({
   }, []);
 
   useLayoutEffect(() => {
-    if (!open) {
+    if (!showPortal || !open) {
       setCoords(null);
       return;
     }
     reposition();
     const id = requestAnimationFrame(reposition);
     return () => cancelAnimationFrame(id);
-  }, [open, reposition]);
+  }, [showPortal, open, reposition]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!showPortal || !open) return;
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
     return () => {
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', reposition, true);
     };
-  }, [open, reposition]);
+  }, [showPortal, open, reposition]);
+
+  if (!showPortal) {
+    return <span className={className ?? 'inline-flex shrink-0'}>{children}</span>;
+  }
 
   return (
     <>

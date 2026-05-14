@@ -10,8 +10,10 @@ const resources = {
         tooltipThemeDark: 'motyw ciemny',
         tooltipLangPl: 'język polski',
         tooltipLangEn: 'język angielski',
-        tooltipGridComfort: 'tryb siatki: wygodny',
-        tooltipGridCompact: 'tryb siatki: zwarty',
+        tooltipGridComfort:
+          'Wygodniejszy widok tabeli · od szerokości 1920 px automatycznie · klik ustawia tylko w tej zakładce',
+        tooltipGridCompact:
+          'Zwarty widok tabeli · poniżej 1920 px automatycznie · klik ustawia tylko w tej zakładce',
       },
       table: {
         name: 'Nazwa ETF',
@@ -270,8 +272,10 @@ const resources = {
         tooltipThemeDark: 'theme dark',
         tooltipLangPl: 'language Polish',
         tooltipLangEn: 'language English',
-        tooltipGridComfort: 'mode grid comfort',
-        tooltipGridCompact: 'mode grid compact',
+        tooltipGridComfort:
+          'Comfort table density · automatic from 1920px · click applies for this browser tab only',
+        tooltipGridCompact:
+          'Compact table density · automatic below 1920px · click applies for this browser tab only',
       },
       table: {
         name: 'ETF Name',
