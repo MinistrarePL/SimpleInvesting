@@ -6,6 +6,12 @@ const resources = {
     translation: {
       header: {
         title: 'Porównywarka ETF',
+        tooltipThemeLight: 'motyw jasny',
+        tooltipThemeDark: 'motyw ciemny',
+        tooltipLangPl: 'język polski',
+        tooltipLangEn: 'język angielski',
+        tooltipGridComfort: 'tryb siatki: wygodny',
+        tooltipGridCompact: 'tryb siatki: zwarty',
       },
       table: {
         name: 'Nazwa ETF',
@@ -37,6 +43,8 @@ const resources = {
         pageOf: 'Strona {{current}} z {{total}}',
         prevPage: 'Poprzednia strona',
         nextPage: 'Następna strona',
+        densitySwitchCompact: 'Tryb ścisły tabeli (mniejsza czcionka i marginesy)',
+        densitySwitchComfort: 'Tryb wygodny tabeli',
         infoAria: 'Wyjaśnienie kolumny:',
         info: {
           name:
@@ -67,6 +75,8 @@ const resources = {
       },
       filters: {
         openBtn: 'Filtry',
+        requireAccountForFilters:
+          'Aby korzystać z filtrów ETF, zaloguj się lub załóż bezpłatne konto.',
         title: 'Filtry',
         empty: 'Filtry pojawią się tutaj wkrótce. W tym panelu skonfigurujesz zaawansowane kryteria wyszukiwania funduszy.',
         clear: 'Wyczyść',
@@ -256,6 +266,12 @@ const resources = {
     translation: {
       header: {
         title: 'ETF Comparator',
+        tooltipThemeLight: 'theme light',
+        tooltipThemeDark: 'theme dark',
+        tooltipLangPl: 'language Polish',
+        tooltipLangEn: 'language English',
+        tooltipGridComfort: 'mode grid comfort',
+        tooltipGridCompact: 'mode grid compact',
       },
       table: {
         name: 'ETF Name',
@@ -287,6 +303,8 @@ const resources = {
         pageOf: 'Page {{current}} of {{total}}',
         prevPage: 'Previous page',
         nextPage: 'Next page',
+        densitySwitchCompact: 'Compact table (smaller type and spacing)',
+        densitySwitchComfort: 'Comfortable table layout',
         infoAria: 'Column explanation:',
         info: {
           name:
@@ -317,6 +335,7 @@ const resources = {
       },
       filters: {
         openBtn: 'Filters',
+        requireAccountForFilters: 'Sign in or create a free account to use ETF filters.',
         title: 'Filters',
         empty: 'Filters will appear here soon. This panel will host advanced search criteria for funds.',
         clear: 'Clear',

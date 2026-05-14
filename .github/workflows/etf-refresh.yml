@@ -58,6 +58,8 @@ jobs:
             fi
             if [ "$FUND" = "true" ]; then
               npm run seed:fundamentals
+              npm run prune:etfs
+              npm run cleanup:empty
             fi
             npm run seed:prices
             exit 0
@@ -68,8 +70,10 @@ jobs:
           DOW=$(date -u +%u)
 
           if [ "$DAY" = "1" ] && [ "$HOUR" = "02" ]; then
-            echo "Monthly run: fundamentals + prices"
+            echo "Monthly run: fundamentals + prune + prices"
             npm run seed:fundamentals
+            npm run prune:etfs
+            npm run cleanup:empty
             npm run seed:prices
           elif [ "$HOUR" = "22" ] && [ "$DOW" -ge 1 ] && [ "$DOW" -le 5 ]; then
             echo "Daily run (Mon-Fri): prices only"

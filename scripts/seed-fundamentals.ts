@@ -7,6 +7,9 @@
  *
  * Wejście: data/etf-universe.json (z scripts/discover-etfs.ts)
  *
+ * Po seed: opcjonalnie `npm run prune:etfs` (wymaga zsynchronizowanego etf-universe.json
+ * dla rankingu leveraged wg wolumenu; zob. scripts/prune-etfs.ts).
+ *
  * Opcjonalnie:
  * - SEED_FUNDAMENTALS_MAX (np. 50) — limit rekordów do przetworzenia (test)
  * - SEED_FUNDAMENTALS_DELAY_MS (domyślnie 220) — opóźnienie między tickerami (rate limit; fundamentals = 10 calls)

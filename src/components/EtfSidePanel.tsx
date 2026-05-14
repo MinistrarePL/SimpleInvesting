@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, CandlestickChart, LineChart as LineChartIcon, Info } from 'lucide-react';
 import Highcharts from 'highcharts/highstock';
@@ -8,6 +8,7 @@ import type { EtfDetail, EtfRow } from '../types/etf';
 import { supabase } from './AuthModal';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import GlossaryText from './GlossaryText';
+import { drawerMotionClasses, overlayMotionClasses, SLIDE_PANEL_DURATION_MS } from '../lib/panelMotion';
 
 interface EtfSidePanelProps {
   isOpen: boolean;
@@ -58,9 +59,35 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
   const [detail, setDetail] = useState<EtfDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [heldEtf, setHeldEtf] = useState<EtfRow | null>(null);
+  /** One-frame delay so slide-in runs after first paint at translate-x-full (same trick as radix-style sheets). */
+  const [entered, setEntered] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!isOpen) {
+      setEntered(false);
+      return;
+    }
+    setEntered(false);
+    const id = window.requestAnimationFrame(() => setEntered(true));
+    return () => window.cancelAnimationFrame(id);
+  }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !etf?.id) {
+    if (etf) setHeldEtf(etf);
+  }, [etf]);
+
+  useEffect(() => {
+    if (isOpen) return;
+    if (!heldEtf) return;
+    const id = window.setTimeout(() => setHeldEtf(null), SLIDE_PANEL_DURATION_MS);
+    return () => window.clearTimeout(id);
+  }, [isOpen, heldEtf]);
+
+  const row = etf ?? heldEtf;
+
+  useEffect(() => {
+    if (!row?.id) {
       setDetail(null);
       setDetailError(null);
       return;
@@ -79,14 +106,14 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
           etf_top_holdings ( rank, code, name, sector, assets_pct )
         `
         )
-        .eq('id', etf.id)
+        .eq('id', row.id)
         .single();
 
       if (cancelled) return;
       setDetailLoading(false);
       if (error) {
         setDetailError(error.message);
-        setDetail({ ...etf } as EtfDetail);
+        setDetail({ ...row } as EtfDetail);
       } else {
         setDetail(data as EtfDetail);
       }
@@ -95,24 +122,24 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     return () => {
       cancelled = true;
     };
-  }, [isOpen, etf?.id, etf]);
+  }, [row?.id]);
 
   useEffect(() => {
     if (isOpen) setChartRange('1y');
-  }, [isOpen, etf?.id]);
+  }, [isOpen, row?.id]);
 
   useEffect(() => {
-    if (!isOpen || !etf?.ticker) {
+    if (!row?.ticker) {
       setChartPoints([]);
       setChartFetch('idle');
       return;
     }
 
-    const ex = etf.exchange || 'US';
+    const ex = row.exchange || 'US';
     let cancelled = false;
     setChartFetch('loading');
 
-    const q = `/api/chart?symbol=${encodeURIComponent(etf.ticker)}&exchange=${encodeURIComponent(ex)}&range=${chartRange}`;
+    const q = `/api/chart?symbol=${encodeURIComponent(row.ticker)}&exchange=${encodeURIComponent(ex)}&range=${chartRange}`;
     fetch(q)
       .then((res) => res.json())
       .then((data: { error?: string; points?: ChartOHLCRow[] }) => {
@@ -135,16 +162,16 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     return () => {
       cancelled = true;
     };
-  }, [isOpen, etf?.ticker, etf?.exchange, chartRange]);
+  }, [row?.ticker, row?.exchange, chartRange]);
 
-  const d = detail ?? etf;
+  const combined: EtfDetail | null = row ? (detail ?? (row as EtfDetail)) : null;
 
   const panelDescription =
-    d == null
+    combined == null
       ? ''
       : i18n.language?.startsWith('pl')
-        ? (d.description_pl || d.description) || ''
-        : d.description || '';
+        ? (combined.description_pl || combined.description) || ''
+        : combined.description || '';
 
   const glossaryLang: 'pl' | 'en' = i18n.language?.startsWith('pl') ? 'pl' : 'en';
 
@@ -167,19 +194,19 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
   ];
 
   const sectorChartData = useMemo(() => {
-    const rows = d?.etf_sectors?.filter((s) => (s.equity_pct ?? 0) > 0) ?? [];
+    const rows = combined?.etf_sectors?.filter((s) => (s.equity_pct ?? 0) > 0) ?? [];
     return rows.map((s) => ({ name: s.sector, value: Number(s.equity_pct) }));
-  }, [d]);
+  }, [combined]);
 
   const regionChartData = useMemo(() => {
-    const rows = d?.etf_regions?.filter((r) => (r.equity_pct ?? 0) > 0) ?? [];
+    const rows = combined?.etf_regions?.filter((r) => (r.equity_pct ?? 0) > 0) ?? [];
     return rows.map((s) => ({ name: s.region, value: Number(s.equity_pct) }));
-  }, [d]);
+  }, [combined]);
 
   const sortedHoldings = useMemo(() => {
-    const h = d?.etf_top_holdings ?? [];
+    const h = combined?.etf_top_holdings ?? [];
     return [...h].sort((a, b) => a.rank - b.rank);
-  }, [d]);
+  }, [combined]);
 
   const chartOptions = useMemo(() => {
     const isBrowser = typeof window !== 'undefined';
@@ -248,11 +275,11 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
           ? [
               {
                 type: chartType === 'candle' ? 'candlestick' : 'line',
-                name: etf?.ticker,
+                name: row?.ticker,
                 data:
                   chartType === 'candle'
                     ? ohlcMs
-                    : ohlcMs.map((row) => [row[0]!, row[4]!] as [number, number]),
+                    : ohlcMs.map((pt) => [pt[0]!, pt[4]!] as [number, number]),
                 tooltip: {
                   valueDecimals: 2,
                 },
@@ -260,18 +287,18 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
             ]
           : [],
     };
-  }, [ohlcMs, chartType, etf, chartFetch]);
+  }, [ohlcMs, chartType, row?.ticker, chartFetch]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && isOpen && row) onClose();
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+  }, [onClose, isOpen, row]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || heldEtf) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -279,11 +306,9 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, heldEtf]);
 
-  if (!etf) return null;
-
-  const renderReturn = (val: number | null) => {
+  function renderReturn(val: number | null) {
     if (val === null) return <span className="text-theme-text-muted">-</span>;
     const isPositive = val > 0;
     const isNegative = val < 0;
@@ -294,11 +319,11 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
         {val}%
       </span>
     );
-  };
+  }
 
   const msStars =
-    d.morningstar_rating != null && d.morningstar_rating >= 1 && d.morningstar_rating <= 5 ? (
-      <span className="text-amber-500">{'★'.repeat(d.morningstar_rating)}</span>
+    combined?.morningstar_rating != null && combined.morningstar_rating >= 1 && combined.morningstar_rating <= 5 ? (
+      <span className="text-amber-500">{'★'.repeat(combined.morningstar_rating)}</span>
     ) : (
       <span className="text-theme-text-muted">—</span>
     );
@@ -306,21 +331,28 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 ${overlayMotionClasses} ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        onClick={row ? onClose : undefined}
         aria-hidden="true"
       />
 
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-2/5 bg-theme-surface border-l border-theme-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed inset-y-0 right-0 z-50 w-1/2 max-w-[100vw] bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen && entered ? 'translate-x-0' : 'translate-x-full'} ${row ? '' : 'pointer-events-none'}`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-theme-border">
-          <div>
+        {row ? (
+          <>
+        <div className="flex items-center justify-between p-6 border-b border-theme-border gap-4">
+          <div className="min-w-0">
             <h2 className="text-2xl font-bold text-theme-text">
-              {etf.ticker}
-              <span className="ml-2 text-sm font-normal text-theme-text-muted">· {etf.exchange || 'US'}</span>
+              {row.ticker}
+              <span className="ml-2 text-sm font-normal text-theme-text-muted">· {row.exchange || 'US'}</span>
             </h2>
-            <p className="text-sm text-theme-text-muted mt-1">{etf.name}</p>
+            <p className="text-sm text-theme-text-muted mt-1 flex flex-wrap items-center gap-2">
+              <span className="min-w-0">{row.name}</span>
+              <span className="inline-flex items-center bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border px-2.5 py-0.5 rounded-full text-sm font-medium shrink-0 max-w-full">
+                <span className="truncate">{getFriendlyCategory(combined!.category, glossaryLang, row.name)}</span>
+              </span>
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -351,58 +383,57 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
           )}
 
           <section>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h3 className="text-lg font-semibold text-theme-text">{t('panel.performance')}</h3>
-              <div className="flex flex-wrap items-center gap-2 justify-end">
-                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
-                  {RANGE_TABS.map(({ key, labelKey }) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => setChartRange(key)}
-                      className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    >
-                      {t(labelKey)}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border">
-                  <button
-                    type="button"
-                    onClick={() => setChartType('line')}
-                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    title={t('panel.chartLine')}
-                  >
-                    <LineChartIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChartType('candle')}
-                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                    title={t('panel.chartCandle')}
-                  >
-                    <CandlestickChart className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-theme-text mb-4">{t('panel.performance')}</h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
                 <div className="text-theme-text-muted text-xs">{t('table.w1')}</div>
-                <div className="text-sm tabular-nums">{renderReturn(etf.return_1w)}</div>
+                <div className="text-sm tabular-nums">{renderReturn(row.return_1w)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
                 <div className="text-theme-text-muted text-xs">{t('table.m1')}</div>
-                <div className="text-sm tabular-nums">{renderReturn(etf.return_1m)}</div>
+                <div className="text-sm tabular-nums">{renderReturn(row.return_1m)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
                 <div className="text-theme-text-muted text-xs">{t('table.q1')}</div>
-                <div className="text-sm tabular-nums">{renderReturn(etf.return_1q)}</div>
+                <div className="text-sm tabular-nums">{renderReturn(row.return_1q)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 text-center">
                 <div className="text-theme-text-muted text-xs">{t('table.y1')}</div>
-                <div className="text-sm tabular-nums">{renderReturn(etf.return_1y)}</div>
+                <div className="text-sm tabular-nums">{renderReturn(row.return_1y)}</div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 justify-end mb-3">
+              <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
+                {RANGE_TABS.map(({ key, labelKey }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setChartRange(key)}
+                    className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                  >
+                    {t(labelKey)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setChartType('line')}
+                  className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                  title={t('panel.chartLine')}
+                >
+                  <LineChartIcon className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartType('candle')}
+                  className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                  title={t('panel.chartCandle')}
+                >
+                  <CandlestickChart className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -435,49 +466,49 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('table.exposure')}</div>
-                <div className="font-medium text-theme-text">{getFriendlyCategory(d.category, glossaryLang, d.name)}</div>
+                <div className="font-medium text-theme-text">{getFriendlyCategory(combined!.category, glossaryLang, combined!.name)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('table.currency')}</div>
-                <div className="font-medium text-theme-text">{d.currency || '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.currency || '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.issuer')}</div>
-                <div className="font-medium text-theme-text">{d.company_name || '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.company_name || '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.domicile')}</div>
-                <div className="font-medium text-theme-text">{d.domicile || '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.domicile || '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.inception')}</div>
-                <div className="font-medium text-theme-text">{d.inception_date || '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.inception_date || '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">ISIN</div>
-                <div className="font-medium text-theme-text">{d.isin || '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.isin || '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.aum')}</div>
-                <div className="font-medium text-theme-text">{formatAum(d.total_assets)}</div>
+                <div className="font-medium text-theme-text">{formatAum(combined!.total_assets)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.ter')}</div>
-                <div className="font-medium text-theme-text">{fmtPct(d.expense_ratio)}</div>
+                <div className="font-medium text-theme-text">{fmtPct(combined!.expense_ratio)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.yield')}</div>
-                <div className="font-medium text-theme-text">{fmtPct(d.yield_ttm)}</div>
+                <div className="font-medium text-theme-text">{fmtPct(combined!.yield_ttm)}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.holdingsCount')}</div>
-                <div className="font-medium text-theme-text">{d.holdings_count ?? '—'}</div>
+                <div className="font-medium text-theme-text">{combined!.holdings_count ?? '—'}</div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 sm:col-span-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.morningstar')}</div>
                 <div className="font-medium text-theme-text flex items-center gap-2">{msStars}</div>
-                {d.morningstar_category_benchmark && (
-                  <div className="text-xs text-theme-text-muted mt-1">{d.morningstar_category_benchmark}</div>
+                {combined!.morningstar_category_benchmark && (
+                  <div className="text-xs text-theme-text-muted mt-1">{combined!.morningstar_category_benchmark}</div>
                 )}
               </div>
             </div>
@@ -494,7 +525,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `${v?.toFixed?.(2) ?? v}%`} />
+                    <Tooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -513,7 +544,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
                         <Cell key={i} fill={PIE_COLORS[(i + 3) % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `${v?.toFixed?.(2) ?? v}%`} />
+                    <Tooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -555,6 +586,8 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
           )}
 
         </div>
+          </>
+        ) : null}
       </div>
     </>
   );

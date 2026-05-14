@@ -79,7 +79,7 @@ export function countActiveGroups(f: ActiveFilters): number {
   return n;
 }
 
-const LEVERAGE_NAME_RE = /(^|[^\p{L}\p{N}])(2x|3x|inverse|leveraged|ultra|short)([^\p{L}\p{N}]|$)/iu;
+const LEVERAGE_NAME_RE = /(^|[^\p{L}\p{N}])(2x|3x|inverse|leveraged|ultra(?![\s-]*short)|short(?![\s-]*(?:term|duration|dated|maturity)))([^\p{L}\p{N}]|$)/iu;
 const LEVERAGE_CATEGORY_RE = /^(Trading--(Leveraged|Inverse)|Trading - Leveraged\/Inverse)/i;
 
 export function isLeveraged(etf: Pick<EtfRow, 'category' | 'name'>): boolean {

@@ -12,9 +12,11 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialView?: 'login' | 'register' | 'reset' | 'update_password';
+  /** Opcjonalny tekst pod tytułem (np. wymóg konta dla funkcji). */
+  headerNotice?: string | null;
 }
 
-export default function AuthModal({ isOpen, onClose, initialView = 'login' }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, initialView = 'login', headerNotice }: AuthModalProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<'login' | 'register' | 'reset' | 'update_password'>(initialView);
   const [email, setEmail] = useState('');
@@ -124,16 +126,25 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login' }: Au
         <div className="bg-theme-surface w-full max-w-md rounded-2xl shadow-2xl border border-theme-border overflow-hidden">
           
           {/* Nagłówek */}
-          <div className="flex items-center justify-between p-6 border-b border-theme-border">
-            <h2 className="text-xl font-bold text-theme-text">
-              {view === 'login' ? t('auth.login') 
-                : view === 'register' ? t('auth.register') 
-                : view === 'update_password' ? t('auth.updatePassword')
-                : t('auth.resetPassword')}
-            </h2>
-            <button 
+          <div className="flex items-start justify-between gap-3 p-6 border-b border-theme-border">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-xl font-bold text-theme-text">
+                {view === 'login' ? t('auth.login') 
+                  : view === 'register' ? t('auth.register') 
+                  : view === 'update_password' ? t('auth.updatePassword')
+                  : t('auth.resetPassword')}
+              </h2>
+              {headerNotice && (view === 'login' || view === 'register') && (
+                <p className="mt-2 text-sm text-theme-text-muted font-normal leading-snug">
+                  {headerNotice}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
+              className="shrink-0 p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
+              aria-label={t('panel.close')}
             >
               <X className="w-5 h-5" />
             </button>

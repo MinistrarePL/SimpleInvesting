@@ -15,6 +15,8 @@ import {
   Info,
   X,
   SlidersHorizontal,
+  Shrink,
+  Expand,
 } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
@@ -22,6 +24,7 @@ import FiltersSidePanel from './FiltersSidePanel';
 import AuthModal, { supabase } from './AuthModal';
 import AccountSettingsPanel from './AccountSettingsPanel';
 import UserMenu from './UserMenu';
+import HoverTooltip from './HoverTooltip';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import { applyFilters, classifyAum, classifyCost, createEmptyFilters, exposureKeyLabel, type ActiveFilters } from '../lib/etfFilters';
@@ -136,6 +139,9 @@ type TableInfoColumnKey =
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const;
 type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
 
+const GRID_DENSITY_KEY = 'si.grid-density';
+type GridDensity = 'comfort' | 'compact';
+
 interface DashboardProps {
   initialEtfs: EtfRow[];
 }
@@ -143,7 +149,8 @@ interface DashboardProps {
 export default function Dashboard({ initialEtfs }: DashboardProps) {
   const { t, i18n } = useTranslation();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  
+  const [gridDensity, setGridDensity] = useState<GridDensity>('comfort');
+
   // Stan dla ETF-ów (pozwala na dodawanie nowych do tabeli bez odświeżania)
   const [etfs, setEtfs] = useState<EtfRow[]>(initialEtfs);
 
@@ -169,6 +176,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   // Stan autoryzacji
   const [session, setSession] = useState<any>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authHeaderNotice, setAuthHeaderNotice] = useState<string | undefined>(undefined);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register' | 'reset' | 'update_password'>('login');
 
@@ -186,6 +194,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       // Automatyczne wykrycie, że użytkownik kliknął w link do resetu hasła
       if (event === 'PASSWORD_RECOVERY') {
         setAuthView('update_password');
+        setAuthHeaderNotice(undefined);
         setIsAuthModalOpen(true);
       }
     });
@@ -444,26 +453,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     }
   };
 
-  const SortIcon = ({ column }: { column: SortKey }) => {
-    if (sortKey !== column) return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40" />;
-    if (sortDir === 'asc') return <ChevronUp className="w-3.5 h-3.5" />;
-    return <ChevronDown className="w-3.5 h-3.5" />;
-  };
-
-  const ColumnInfoBtn = ({ col }: { col: TableInfoColumnKey }) => (
-    <button
-      type="button"
-      className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors shrink-0"
-      aria-label={`${t('table.infoAria')} ${t(`table.${col}`)}`}
-      onClick={(e) => {
-        e.stopPropagation();
-        setInfoColumn(col);
-      }}
-    >
-      <Info className="w-3.5 h-3.5" strokeWidth={2} />
-    </button>
-  );
-
   // Inicjalizacja motywu na podstawie localStorage lub preferencji systemowych
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -475,6 +464,13 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     } else {
       setTheme('light');
       document.documentElement.classList.remove('dark');
+    }
+
+    try {
+      const gd = localStorage.getItem(GRID_DENSITY_KEY);
+      if (gd === 'compact' || gd === 'comfort') setGridDensity(gd);
+    } catch {
+      /* ignore */
     }
   }, []);
 
@@ -490,12 +486,89 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     }
   };
 
+  const toggleGridDensity = () => {
+    setGridDensity((prev) => {
+      const next: GridDensity = prev === 'comfort' ? 'compact' : 'comfort';
+      try {
+        localStorage.setItem(GRID_DENSITY_KEY, next);
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   const toggleLanguage = () => {
     const newLang = i18n.language === 'pl' ? 'en' : 'pl';
     i18n.changeLanguage(newLang);
     try { localStorage.setItem('si.lang', newLang); } catch (e) {}
     window.dispatchEvent(new CustomEvent('si:lang-change', { detail: newLang }));
   };
+
+  const compact = gridDensity === 'compact';
+  const gx = compact
+    ? {
+        thWide: 'py-2 px-3 text-[13px] tracking-wide',
+        thNarrow: 'py-2 px-2 text-[13px] tracking-wide',
+        tdWide: 'py-2 px-3 text-[13px] leading-snug',
+        tdCurrency: 'py-2 px-2 text-[13px] font-medium text-theme-text-muted whitespace-nowrap',
+        tdAumTer: 'py-2 px-2 text-[13px] text-right text-theme-text max-w-[13rem]',
+        tdStars: 'py-2 px-2 text-[13px] text-center',
+        emptyRow: 'py-4 text-[13px]',
+        hdrGap: 'gap-1',
+        nameSub: 'text-[13px]',
+        badge: 'px-1.5 py-px rounded-full text-[13px] font-medium',
+        pagerBar: 'gap-2 px-3 py-2',
+        pagerControls: 'gap-2',
+        pagerText: 'text-xs',
+        pagerLabel: 'text-xs gap-1.5',
+        pagerSelect:
+          'rounded-lg border border-theme-border bg-theme-surface text-theme-text text-xs py-1 pl-2 pr-7 focus:outline-none focus:ring-2 focus:ring-theme-primary',
+        pagerBtn: 'p-1.5',
+        pagerChevron: 'w-4 h-4',
+        ic: 'w-3 h-3',
+      }
+    : {
+        thWide: 'py-4 px-6 text-sm tracking-wider',
+        thNarrow: 'py-4 px-4 text-sm tracking-wider',
+        tdWide: 'py-4 px-6',
+        tdCurrency: 'py-4 px-4 text-base font-medium text-theme-text-muted whitespace-nowrap',
+        tdAumTer: 'py-4 px-4 text-base text-right text-theme-text max-w-[13rem]',
+        tdStars: 'py-4 px-4 text-base text-center',
+        emptyRow: 'py-8',
+        hdrGap: 'gap-1.5',
+        nameSub: 'text-sm',
+        badge: 'px-2.5 py-0.5 rounded-full text-sm font-medium',
+        pagerBar: 'gap-3 px-4 py-3',
+        pagerControls: 'gap-3',
+        pagerText: 'text-sm',
+        pagerLabel: 'text-sm gap-2',
+        pagerSelect:
+          'rounded-lg border border-theme-border bg-theme-surface text-theme-text text-sm py-1.5 pl-2 pr-8 focus:outline-none focus:ring-2 focus:ring-theme-primary',
+        pagerBtn: 'p-2',
+        pagerChevron: 'w-5 h-5',
+        ic: 'w-3.5 h-3.5',
+      };
+
+  const SortIcon = ({ column }: { column: SortKey }) => {
+    if (sortKey !== column) return <ChevronsUpDown className={`${gx.ic} opacity-40`} />;
+    if (sortDir === 'asc') return <ChevronUp className={gx.ic} />;
+    return <ChevronDown className={gx.ic} />;
+  };
+
+  const ColumnInfoBtn = ({ col }: { col: TableInfoColumnKey }) => (
+    <button
+      type="button"
+      className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors shrink-0"
+      aria-label={`${t('table.infoAria')} ${t(`table.${col}`)}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setInfoColumn(col);
+      }}
+    >
+      <Info className={gx.ic} strokeWidth={2} />
+    </button>
+  );
 
   // Funkcja pomocnicza do formatowania stóp zwrotu z kolorami
   const renderReturn = (val: number | null) => {
@@ -544,22 +617,58 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           {/* Kontrolki (Język, Motyw, Logowanie) */}
           <div className="flex items-center gap-2 sm:gap-4">
             
-            <button 
-              onClick={toggleLanguage}
-              className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-sm font-medium"
-              title="Zmień język / Change language"
+            <HoverTooltip
+              tooltip={
+                i18n.language.startsWith('pl') ? t('header.tooltipLangPl') : t('header.tooltipLangEn')
+              }
             >
-              <Globe className="w-4 h-4 text-theme-primary" />
-              <span className="uppercase">{i18n.language}</span>
-            </button>
+              <button
+                type="button"
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-theme-bg transition-colors text-sm font-medium"
+              >
+                <Globe className="w-4 h-4 text-theme-primary" />
+                <span className="uppercase">{i18n.language}</span>
+              </button>
+            </HoverTooltip>
 
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-md hover:bg-theme-bg transition-colors text-theme-primary"
-              title={theme === 'light' ? t('theme.dark') : t('theme.light')}
+            <HoverTooltip
+              tooltip={theme === 'light' ? t('header.tooltipThemeLight') : t('header.tooltipThemeDark')}
             >
-              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-            </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="p-2 rounded-md hover:bg-theme-bg transition-colors text-theme-primary"
+              >
+                {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              </button>
+            </HoverTooltip>
+
+            <HoverTooltip
+              tooltip={
+                gridDensity === 'comfort'
+                  ? t('header.tooltipGridComfort')
+                  : t('header.tooltipGridCompact')
+              }
+            >
+              <button
+                type="button"
+                onClick={toggleGridDensity}
+                className="p-2 rounded-md hover:bg-theme-bg transition-colors text-theme-primary"
+                aria-label={
+                  gridDensity === 'comfort'
+                    ? t('table.densitySwitchCompact')
+                    : t('table.densitySwitchComfort')
+                }
+                aria-pressed={gridDensity === 'compact'}
+              >
+                {gridDensity === 'comfort' ? (
+                  <Shrink className="w-5 h-5" />
+                ) : (
+                  <Expand className="w-5 h-5" />
+                )}
+              </button>
+            </HoverTooltip>
 
             <div className="w-px h-6 bg-theme-border mx-1 hidden sm:block"></div>
 
@@ -579,16 +688,20 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                 />
               </>
             ) : (
-              <button
-                onClick={() => {
-                  setAuthView('login');
-                  setIsAuthModalOpen(true);
-                }}
-                className="btn-secondary"
-              >
-                <User className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('auth.loginRegisterBtn')}</span>
-              </button>
+              <HoverTooltip tooltip={t('auth.loginRegisterBtn')}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView('login');
+                    setAuthHeaderNotice(undefined);
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="btn-secondary"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('auth.loginRegisterBtn')}</span>
+                </button>
+              </HoverTooltip>
             )}
           </div>
         </div>
@@ -611,26 +724,41 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             {searchQuery !== '' && (
-              <button
-                type="button"
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-theme-text-muted hover:text-theme-text rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary"
-                onClick={() => setSearchQuery('')}
-                aria-label={t('search.clear')}
-              >
-                <X className="h-5 w-5 shrink-0" aria-hidden />
-              </button>
+              <HoverTooltip tooltip={t('search.clear')} className="absolute inset-y-0 right-0 flex items-center">
+                <button
+                  type="button"
+                  className="flex h-full items-center pr-3 text-theme-text-muted hover:text-theme-text rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary"
+                  onClick={() => setSearchQuery('')}
+                  aria-label={t('search.clear')}
+                >
+                  <X className="h-5 w-5 shrink-0" aria-hidden />
+                </button>
+              </HoverTooltip>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setIsFiltersOpen(true)}
-            className="btn-primary shrink-0"
-            aria-haspopup="dialog"
-            aria-expanded={isFiltersOpen}
+          <HoverTooltip
+            tooltip={session ? t('filters.title') : t('filters.requireAccountForFilters')}
+            className="shrink-0 inline-flex"
           >
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>{t('filters.openBtn')}</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (session) {
+                  setIsFiltersOpen(true);
+                } else {
+                  setAuthView('login');
+                  setAuthHeaderNotice(t('filters.requireAccountForFilters'));
+                  setIsAuthModalOpen(true);
+                }
+              }}
+              className="btn-primary shrink-0"
+              aria-haspopup="dialog"
+              aria-expanded={isFiltersOpen}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>{t('filters.openBtn')}</span>
+            </button>
+          </HoverTooltip>
         </div>
 
         {activeFilterChips.length > 0 && (
@@ -678,100 +806,100 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               <thead>
                 <tr className="border-b border-theme-border">
                   <th
-                    className="bg-theme-surface py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors shadow-[0_1px_0_0_var(--color-theme-border)]"
+                    className={`bg-theme-surface font-semibold text-theme-text-muted uppercase whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors shadow-[0_1px_0_0_var(--color-theme-border)] ${gx.thWide}`}
                     onClick={() => handleSort('ticker')}
                   >
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className={`inline-flex items-center ${gx.hdrGap}`}>
                       {t('table.name')}
                       <SortIcon column="ticker" />
                       <ColumnInfoBtn col="name" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
                     onClick={() => handleSort('category')}
                   >
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className={`inline-flex items-center ${gx.hdrGap}`}>
                       {t('table.exposure')}
                       <SortIcon column="category" />
                       <ColumnInfoBtn col="exposure" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
                     onClick={() => handleSort('return_1w')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.w1')}
                       <SortIcon column="return_1w" />
                       <ColumnInfoBtn col="w1" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
                     onClick={() => handleSort('return_1m')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.m1')}
                       <SortIcon column="return_1m" />
                       <ColumnInfoBtn col="m1" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
                     onClick={() => handleSort('return_1q')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.q1')}
                       <SortIcon column="return_1q" />
                       <ColumnInfoBtn col="q1" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-6 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
                     onClick={() => handleSort('return_1y')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.y1')}
                       <SortIcon column="return_1y" />
                       <ColumnInfoBtn col="y1" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
                     onClick={() => handleSort('currency')}
                   >
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className={`inline-flex items-center ${gx.hdrGap}`}>
                       {t('table.currency')}
                       <SortIcon column="currency" />
                       <ColumnInfoBtn col="currency" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
                     onClick={() => handleSort('total_assets')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.aum')}
                       <SortIcon column="total_assets" />
                       <ColumnInfoBtn col="aum" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
                     onClick={() => handleSort('expense_ratio')}
                   >
-                    <span className="inline-flex items-center justify-end gap-1.5">
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
                       {t('table.ter')}
                       <SortIcon column="expense_ratio" />
                       <ColumnInfoBtn col="ter" />
                     </span>
                   </th>
                   <th
-                    className="bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] py-4 px-4 font-semibold text-sm text-theme-text-muted uppercase tracking-wider whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors"
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-center cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
                     onClick={() => handleSort('morningstar_rating')}
                   >
-                    <span className="inline-flex items-center justify-center gap-1.5">
+                    <span className={`inline-flex items-center justify-center ${gx.hdrGap}`}>
                       {t('table.ms')}
                       <SortIcon column="morningstar_rating" />
                       <ColumnInfoBtn col="ms" />
@@ -782,50 +910,47 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               <tbody className="divide-y divide-theme-border">
                 {filteredCount === 0 ? (
                   <tr>
-                    <td colSpan={10} className="py-8 text-center text-theme-text-muted">
+                    <td colSpan={10} className={`text-center text-theme-text-muted ${gx.emptyRow}`}>
                       {t('table.noData')}
                     </td>
                   </tr>
                 ) : (
                   paginatedEtfs.map((etf) => (
-                    <tr 
-                      key={etf.id} 
+                    <tr
+                      key={etf.id}
                       onClick={() => setSelectedEtf(etf)}
                       className="hover:bg-theme-bg/50 transition-colors group cursor-pointer"
                     >
-                      <td className="py-4 px-6">
+                      <td className={gx.tdWide}>
                         <div className="flex flex-col">
                           <span className="font-bold text-theme-text">{etf.ticker}</span>
-                          <span className="text-sm text-theme-text-muted truncate max-w-[250px]" title={etf.name}>
+                          <span
+                            className={`${gx.nameSub} text-theme-text-muted truncate max-w-[250px]`}
+                            title={etf.name}
+                          >
                             {etf.name}
                           </span>
                         </div>
                       </td>
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border">
+                      <td className={gx.tdWide}>
+                        <span
+                          className={`inline-flex items-center bg-theme-badge-bg text-theme-badge-text border border-theme-badge-border ${gx.badge}`}
+                        >
                           {getFriendlyCategory(etf.category, i18n.language as 'pl' | 'en', etf.name)}
                         </span>
                       </td>
-                      <td className="py-4 px-6 text-right">
-                        {renderReturn(etf.return_1w)}
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        {renderReturn(etf.return_1m)}
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        {renderReturn(etf.return_1q)}
-                      </td>
-                      <td className="py-4 px-6 text-right">
-                        {renderReturn(etf.return_1y)}
-                      </td>
-                      <td className="py-4 px-4 text-base font-medium text-theme-text-muted whitespace-nowrap">
-                        {etf.currency || '—'}
-                      </td>
-                      <td className="py-4 px-4 text-base text-right text-theme-text max-w-[13rem]">
+                      <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1w)}</td>
+                      <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1m)}</td>
+                      <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1q)}</td>
+                      <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1y)}</td>
+                      <td className={gx.tdCurrency}>{etf.currency || '—'}</td>
+                      <td className={gx.tdAumTer}>
                         <PreciseHoverTip
                           tooltip={
                             etf.total_assets != null && Number.isFinite(etf.total_assets)
-                              ? new Intl.NumberFormat(langUi === 'pl' ? 'pl-PL' : 'en-US', { maximumFractionDigits: 0 }).format(etf.total_assets)
+                              ? new Intl.NumberFormat(langUi === 'pl' ? 'pl-PL' : 'en-US', {
+                                  maximumFractionDigits: 0,
+                                }).format(etf.total_assets)
                               : t('table.noData')
                           }
                           className="inline-flex w-full min-w-0 cursor-default justify-end"
@@ -834,12 +959,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                             const b = classifyAum(etf.total_assets);
                             if (!b) return <span className="tabular-nums text-theme-text-muted">—</span>;
                             return (
-                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">{t(`table.sizeTier.${b}`)}</span>
+                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">
+                                {t(`table.sizeTier.${b}`)}
+                              </span>
                             );
                           })()}
                         </PreciseHoverTip>
                       </td>
-                      <td className="py-4 px-4 text-base text-right max-w-[13rem] text-theme-text">
+                      <td className={gx.tdAumTer}>
                         <PreciseHoverTip
                           tooltip={
                             etf.expense_ratio != null && Number.isFinite(etf.expense_ratio)
@@ -852,14 +979,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                             const b = classifyCost(etf.expense_ratio);
                             if (!b) return <span className="tabular-nums text-theme-text-muted">—</span>;
                             return (
-                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">{t(`table.costTier.${b}`)}</span>
+                              <span className="inline-block max-w-full truncate align-bottom tabular-nums">
+                                {t(`table.costTier.${b}`)}
+                              </span>
                             );
                           })()}
                         </PreciseHoverTip>
                       </td>
-                      <td className="py-4 px-4 text-base text-center">
-                        {renderStars(etf.morningstar_rating)}
-                      </td>
+                      <td className={gx.tdStars}>{renderStars(etf.morningstar_rating ?? null)}</td>
                     </tr>
                   ))
                 )}
@@ -867,14 +994,18 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-theme-border px-4 py-3 bg-theme-bg/30">
-            <p className="text-sm text-theme-text-muted order-2 sm:order-1">
+          <div
+            className={`flex flex-col sm:flex-row sm:items-center sm:justify-between border-t border-theme-border bg-theme-bg/30 ${gx.pagerBar}`}
+          >
+            <p className={`${gx.pagerText} text-theme-text-muted order-2 sm:order-1`}>
               {t('table.showingRange', { from: rangeFrom, to: rangeTo, total: filteredCount })}
               <span className="hidden sm:inline"> · </span>
               <span className="block sm:inline">{t('table.pageOf', { current: pageIndex + 1, total: totalPages })}</span>
             </p>
-            <div className="flex flex-wrap items-center gap-3 order-1 sm:order-2 sm:justify-end">
-              <label className="flex items-center gap-2 text-sm text-theme-text-muted whitespace-nowrap">
+            <div
+              className={`flex flex-wrap items-center order-1 sm:order-2 sm:justify-end ${gx.pagerControls}`}
+            >
+              <label className={`flex items-center text-theme-text-muted whitespace-nowrap ${gx.pagerLabel}`}>
                 <span>{t('table.rowsPerPage')}</span>
                 <select
                   value={pageSize}
@@ -885,7 +1016,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       setPageIndex(0);
                     }
                   }}
-                  className="rounded-lg border border-theme-border bg-theme-surface text-theme-text text-sm py-1.5 pl-2 pr-8 focus:outline-none focus:ring-2 focus:ring-theme-primary"
+                  className={gx.pagerSelect}
                 >
                   {PAGE_SIZE_OPTIONS.map((n) => (
                     <option key={n} value={n}>
@@ -900,18 +1031,18 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                   aria-label={t('table.prevPage')}
                   disabled={pageIndex <= 0}
                   onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-                  className="p-2 rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className={`${gx.pagerBtn} rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className={gx.pagerChevron} />
                 </button>
                 <button
                   type="button"
                   aria-label={t('table.nextPage')}
                   disabled={pageIndex >= totalPages - 1 || filteredCount === 0}
                   onClick={() => setPageIndex((i) => Math.min(totalPages - 1, i + 1))}
-                  className="p-2 rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                  className={`${gx.pagerBtn} rounded-lg border border-theme-border bg-theme-surface text-theme-text hover:bg-theme-bg disabled:opacity-40 disabled:pointer-events-none transition-colors`}
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className={gx.pagerChevron} />
                 </button>
               </div>
             </div>
@@ -973,10 +1104,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       />
 
       {/* Modal logowania / rejestracji */}
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setAuthHeaderNotice(undefined);
+        }}
         initialView={authView}
+        headerNotice={authHeaderNotice}
       />
     </div>
   );

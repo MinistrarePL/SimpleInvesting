@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Session } from '@supabase/supabase-js';
 import { X, Mail, Lock, Loader2, Settings } from 'lucide-react';
 import { supabase } from './AuthModal';
+import { drawerMotionClasses, overlayMotionClasses } from '../lib/panelMotion';
 
 const MIN_PASSWORD = 6;
 
@@ -147,7 +148,7 @@ export default function AccountSettingsPanel({
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 ${overlayMotionClasses} ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -155,7 +156,7 @@ export default function AccountSettingsPanel({
       />
 
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[min(40vw,32rem)] max-w-full bg-theme-surface border-l border-theme-border shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed inset-y-0 right-0 z-50 w-full sm:w-[min(40vw,32rem)] max-w-full bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"

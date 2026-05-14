@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Session } from '@supabase/supabase-js';
 import { LogOut, ChevronDown, Settings } from 'lucide-react';
-
 function displayName(session: Session): string {
   const m = session.user.user_metadata as Record<string, unknown>;
   const full = m?.full_name;
@@ -59,33 +58,33 @@ export default function UserMenu({ session, onLogout, onOpenSettings }: UserMenu
 
   return (
     <div className="relative" ref={wrapRef}>
-      <button
-        type="button"
-        className="flex items-center gap-2 pl-1 pr-2 py-1.5 rounded-xl max-w-[220px] sm:max-w-[280px] transition-opacity hover:opacity-90"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        aria-label={t('auth.accountMenuAria')}
-        onClick={() => setOpen((v) => !v)}
-      >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="h-9 w-9 rounded-full object-cover shrink-0"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="h-9 w-9 rounded-full bg-teal-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
-            {label}
+        <button
+          type="button"
+          className="flex items-center gap-2 pl-1 pr-2 py-1.5 rounded-xl max-w-[220px] sm:max-w-[280px] transition-opacity hover:opacity-90"
+          aria-expanded={open}
+          aria-haspopup="menu"
+          aria-label={t('auth.accountMenuAria')}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt=""
+              className="h-9 w-9 rounded-full object-cover shrink-0"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="h-9 w-9 rounded-full bg-teal-600 text-white text-sm font-bold flex items-center justify-center shrink-0">
+              {label}
+            </span>
+          )}
+          <span className="min-w-0 truncate text-sm font-medium text-theme-text hidden sm:inline-block">
+            {name}
           </span>
-        )}
-        <span className="min-w-0 truncate text-sm font-medium text-theme-text hidden sm:inline-block">
-          {name}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 text-theme-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
+          <ChevronDown
+            className={`w-4 h-4 text-theme-text-muted shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
 
       {open && (
         <div

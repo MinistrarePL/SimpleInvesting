@@ -1,6 +1,6 @@
 /** Giełdy docelowe (kody EODHD) */
 /** MI (Milano) — brak kodu w EODHD; pomijamy */
-export const TARGET_EXCHANGES = ['US', 'XETRA', 'LSE', 'PA', 'AS', 'SW'] as const;
+export const TARGET_EXCHANGES = ['US', 'XETRA', 'LSE', 'PA', 'AS', 'SW', 'MC'] as const;
 export type TargetExchange = (typeof TARGET_EXCHANGES)[number];
 
 export const EODHD_BASE = 'https://eodhd.com/api';
