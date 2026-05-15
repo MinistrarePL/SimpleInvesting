@@ -24,3 +24,18 @@
   # frame-src        — Turnstile challenge iframe + Google OAuth popup
   # font-src         — self (Inter via @fontsource)
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.posthog.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co https://eu.i.posthog.com https://eu.posthog.com https://challenges.cloudflare.com https://eodhd.com https://accounts.google.com; frame-src https://challenges.cloudflare.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://*.supabase.co https://accounts.google.com; frame-ancestors 'none'; upgrade-insecure-requests
+
+/og-social.png
+  Cache-Control: public, max-age=2592000, immutable
+
+/sitemap-index.xml
+  Cache-Control: public, max-age=3600
+
+/sitemap-0.xml
+  Cache-Control: public, max-age=3600
+
+/robots.txt
+  Cache-Control: public, max-age=86400
+
+/llms.txt
+  Cache-Control: public, max-age=86400

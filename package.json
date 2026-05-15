@@ -40,6 +40,7 @@
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
+    "@astrojs/sitemap": "^3.7.2",
     "tsx": "^4.21.0"
   }
 }

@@ -1,0 +1,81 @@
+---
+interface SeoHeadProps {
+	title: string;
+	description: string;
+	canonicalPath: string;
+	ogImage?: string;
+	lang?: 'pl' | 'en';
+	type?: 'website' | 'article';
+	noindex?: boolean;
+	/** Defaults OG/Twitter image dimensions from assets/social.png (1024×538). */
+	ogImageWidth?: number;
+	ogImageHeight?: number;
+}
+
+const CANONICAL_ORIGIN = 'https://simpleinvesting.org';
+
+const {
+	title,
+	description,
+	canonicalPath,
+	ogImage = '/og-social.png',
+	lang = 'pl',
+	type = 'website',
+	noindex = false,
+	ogImageWidth = 1024,
+	ogImageHeight = 538,
+} = Astro.props as SeoHeadProps;
+
+const pathNorm =
+	canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`;
+const canonicalUrl = new URL(pathNorm, CANONICAL_ORIGIN).href;
+
+const ogImageAbs = new URL(ogImage, CANONICAL_ORIGIN).href;
+
+const localeOg = lang === 'pl' ? 'pl_PL' : 'en_US';
+const localeAlt = lang === 'pl' ? 'en_US' : 'pl_PL';
+
+const robotsContent = noindex
+	? 'noindex,nofollow'
+	: 'index,follow,max-image-preview:large';
+
+---
+
+<meta name="description" content={description} />
+<meta name="robots" content={robotsContent} />
+<meta name="author" content="SimpleInvesting" />
+<meta
+	name="theme-color"
+	content="#ffffff"
+	media="(prefers-color-scheme: light)"
+/>
+<meta
+	name="theme-color"
+	content="#0f172a"
+	media="(prefers-color-scheme: dark)"
+/>
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="SimpleInvesting" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={ogImageAbs} />
+<meta property="og:image:width" content={String(ogImageWidth)} />
+<meta property="og:image:height" content={String(ogImageHeight)} />
+<meta property="og:locale" content={localeOg} />
+<meta property="og:locale:alternate" content={localeAlt} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImageAbs} />
+
+<link rel="canonical" href={canonicalUrl} />
+<link rel="alternate" hreflang="pl" href={canonicalUrl} />
+<link rel="alternate" hreflang="en" href={canonicalUrl} />
+<link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+
+<link rel="sitemap" href="/sitemap-index.xml" />
+
+<slot />

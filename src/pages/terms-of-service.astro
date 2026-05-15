@@ -1,12 +1,52 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import JsonLd from '../components/JsonLd.astro';
 import '../styles/global.css';
 
 const effectiveDate = '15 maja 2026';
 const effectiveDateEn = 'May 15, 2026';
+
+const SITE = 'https://simpleinvesting.org';
+const termsDesc =
+	'Regulamin świadczenia usług SimpleInvesting: zasady korzystania z porównywarki ETF, konta użytkownika i odpowiedzialność.';
+const jsonLdTerms = {
+	'@context': 'https://schema.org',
+	'@graph': [
+		{
+			'@type': 'WebPage',
+			'@id': `${SITE}/terms-of-service#webpage`,
+			url: `${SITE}/terms-of-service`,
+			name: 'Regulamin serwisu | SimpleInvesting',
+			description: termsDesc,
+			isPartOf: { '@id': `${SITE}/#website` },
+			inLanguage: ['pl', 'en'],
+		},
+		{
+			'@type': 'BreadcrumbList',
+			'@id': `${SITE}/terms-of-service#breadcrumb`,
+			itemListElement: [
+				{
+					'@type': 'ListItem',
+					position: 1,
+					name: 'SimpleInvesting',
+					item: `${SITE}/`,
+				},
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: 'Regulamin',
+					item: `${SITE}/terms-of-service`,
+				},
+			],
+		},
+	],
+};
+
+export const prerender = true;
 ---
 
-<Layout title="Regulamin serwisu | SimpleInvesting">
+<Layout title="Regulamin serwisu | SimpleInvesting" description={termsDesc} canonicalPath="/terms-of-service">
+	<JsonLd slot="seo-jsonld" data={jsonLdTerms} />
 	<main class="min-h-screen bg-theme-bg text-theme-text">
 		<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
 			<div class="flex items-center justify-between gap-4 mb-8">

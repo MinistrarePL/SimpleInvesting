@@ -1,0 +1,35 @@
+# SimpleInvesting
+
+> Bezpłatna porównywarka ETF z filtrami, wykresami i watchlistą.
+
+## Co to jest
+
+SimpleInvesting (https://simpleinvesting.org) to webowa porównywarka funduszy ETF
+notowanych w Europie. Pozwala filtrować po klasie aktywów, regionie, kosztach (TER),
+walucie, replikacji i dystrybucji, oglądać wykresy 1Y/3Y/5Y i zapisywać ETF-y
+na osobistej watchliście (wymaga konta).
+
+## Funkcje
+
+- Porównywarka ETF (sortowanie, filtry, gęstość siatki)
+- Wykresy historyczne 1Y/3Y/5Y (Highcharts)
+- Watchlista per użytkownik (Supabase + RLS)
+- Wersje językowe: polska i angielska
+
+## Linki
+
+- Strona główna: https://simpleinvesting.org/
+- Polityka prywatności: https://simpleinvesting.org/privacy-policy
+- Regulamin: https://simpleinvesting.org/terms-of-service
+- Kontakt: contact@simpleinvesting.org
+
+---
+
+## English
+
+**SimpleInvesting** (https://simpleinvesting.org) is a free web app for comparing
+European-listed ETFs: filters (asset class, region, TER, currency, replication,
+distribution), 1Y/3Y/5Y charts, and a per-user watchlist (account required).
+Languages: Polish and English.
+
+**Links:** Home https://simpleinvesting.org/ · Privacy https://simpleinvesting.org/privacy-policy · Terms https://simpleinvesting.org/terms-of-service · contact@simpleinvesting.org

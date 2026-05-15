@@ -1,8 +1,55 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Dashboard from '../components/Dashboard';
+import JsonLd from '../components/JsonLd.astro';
 import '../styles/global.css';
 import { createClient } from '@supabase/supabase-js';
+
+const SITE = 'https://simpleinvesting.org';
+const jsonLdGraph = {
+	'@context': 'https://schema.org',
+	'@graph': [
+		{
+			'@type': 'Organization',
+			'@id': `${SITE}/#organization`,
+			name: 'SimpleInvesting',
+			url: SITE,
+			logo: `${SITE}/favicon.png`,
+			email: 'contact@simpleinvesting.org',
+			sameAs: [],
+		},
+		{
+			'@type': 'WebSite',
+			'@id': `${SITE}/#website`,
+			url: SITE,
+			name: 'SimpleInvesting',
+			inLanguage: ['pl', 'en'],
+			publisher: { '@id': `${SITE}/#organization` },
+		},
+		{
+			'@type': 'WebApplication',
+			'@id': `${SITE}/#webapp`,
+			name: 'SimpleInvesting',
+			url: SITE,
+			applicationCategory: 'FinanceApplication',
+			operatingSystem: 'Web',
+			offers: {
+				'@type': 'Offer',
+				price: '0',
+				priceCurrency: 'PLN',
+			},
+			featureList: [
+				'Porównywarka ETF',
+				'Wykresy 1Y/3Y/5Y',
+				'Watchlist',
+				'Filtry',
+				'Eksport',
+			],
+			inLanguage: ['pl', 'en'],
+			publisher: { '@id': `${SITE}/#organization` },
+		},
+	],
+};
 
 // Inicjalizacja Supabase po stronie serwera (SSR)
 // Astro w trybie SSR na Netlify czasami potrzebuje process.env zamiast import.meta.env
@@ -38,7 +85,12 @@ for (let from = 0; ; from += PAGE) {
 }
 ---
 
-<Layout>
+<Layout
+	title="SimpleInvesting — porównywarka ETF"
+	description="Bezpłatna porównywarka ETF: filtry, wykresy 1Y/3Y/5Y, watchlist, opisy funduszy. Dane aktualizowane regularnie."
+	canonicalPath="/"
+>
+	<JsonLd slot="seo-jsonld" data={jsonLdGraph} />
 	<!-- Przekazujemy pobrane dane do interaktywnego komponentu React -->
 	<Dashboard initialEtfs={initialEtfs} client:load />
 </Layout>

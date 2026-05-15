@@ -2,27 +2,74 @@
 import CookieBanner from '../components/CookieBanner.astro';
 import PostHogInit from '../components/PostHogInit';
 import PostHogFeedbackFab from '../components/PostHogFeedbackFab';
+import SeoHead from '../components/SeoHead.astro';
 
 interface Props {
 	title?: string;
+	description?: string;
+	canonicalPath?: string;
+	ogImage?: string;
+	lang?: 'pl' | 'en';
+	noindex?: boolean;
+	ogImageWidth?: number;
+	ogImageHeight?: number;
 }
-const { title = 'Porównywarka ETF | SimpleInvesting' } = Astro.props;
+
+const defaultDescription =
+	'Bezpłatna porównywarka ETF: filtry, wykresy, watchlist i opisy funduszy. SimpleInvesting.';
+
+const {
+	title = 'Porównywarka ETF | SimpleInvesting',
+	description = defaultDescription,
+	canonicalPath = '/',
+	ogImage,
+	lang = 'pl',
+	noindex = false,
+	ogImageWidth,
+	ogImageHeight,
+} = Astro.props;
+
 /** Zawsze końcowy slash — `/favicon.svg`, nie `undefinedfavicon.svg` przy pustym BASE_URL */
 const base = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/');
+
+const supabaseUrl =
+	import.meta.env.PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+let supabaseOrigin: string | null = null;
+if (typeof supabaseUrl === 'string' && supabaseUrl) {
+	try {
+		supabaseOrigin = new URL(supabaseUrl).origin;
+	} catch {
+		supabaseOrigin = null;
+	}
+}
 ---
 <!doctype html>
-<html lang="pl">
+<html lang={lang}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width" />
+		<SeoHead
+			title={title}
+			description={description}
+			canonicalPath={canonicalPath}
+			ogImage={ogImage}
+			lang={lang}
+			noindex={noindex}
+			ogImageWidth={ogImageWidth}
+			ogImageHeight={ogImageHeight}
+		>
+			<slot name="seo-jsonld" />
+		</SeoHead>
 		<!-- Ikona zakładki: ICO + PNG — przeglądarki często żądają /favicon.ico zanim przeczytają <link> -->
 		<link rel="icon" href={`${base}favicon.ico`} sizes="32x32" />
 		<link rel="icon" type="image/png" sizes="228x228" href={`${base}favicon.png`} />
 		<link rel="apple-touch-icon" sizes="180x180" href={`${base}apple-touch-icon.png`} />
+		<link rel="preconnect" href="https://eu.i.posthog.com" crossorigin />
+		{supabaseOrigin && <link rel="preconnect" href={supabaseOrigin} crossorigin />}
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 
-		<!-- Skrypt zapobiegający FOUC (Flash of Unstyled Content) przy ładowaniu motywu -->
+		<!-- Skrypt zapobiegający FOUC przy ładowaniu motywu + sync atrybutu lang (bez zmian wizualnych) -->
 		<script is:inline>
 			const theme = (() => {
 				if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
@@ -39,6 +86,19 @@ const base = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/');
 			} else {
 				document.documentElement.classList.remove('dark');
 			}
+
+			(function () {
+				var LANG_KEY = 'si.lang';
+				function detectLang() {
+					try {
+						var stored = localStorage.getItem(LANG_KEY);
+						if (stored === 'en' || stored === 'pl') return stored;
+					} catch (e) {}
+					var nav = (navigator.language || 'pl').toLowerCase();
+					return nav.indexOf('pl') === 0 ? 'pl' : 'en';
+				}
+				document.documentElement.lang = detectLang();
+			})();
 		</script>
 	</head>
 	<body>
@@ -88,10 +148,18 @@ const base = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/');
 				}
 				applyFooter(detectLang());
 				window.addEventListener('storage', function (e) {
-					if (e.key === LANG_KEY) applyFooter(detectLang());
+					if (e.key === LANG_KEY) {
+						applyFooter(detectLang());
+						try {
+							document.documentElement.lang = detectLang();
+						} catch (err) {}
+					}
 				});
 				window.addEventListener('si:lang-change', function () {
 					applyFooter(detectLang());
+					try {
+						document.documentElement.lang = detectLang();
+					} catch (err) {}
 				});
 			})();
 		</script>

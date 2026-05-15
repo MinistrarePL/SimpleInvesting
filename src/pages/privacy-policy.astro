@@ -1,12 +1,56 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import JsonLd from '../components/JsonLd.astro';
 import '../styles/global.css';
 
 const effectiveDate = '15 maja 2026';
 const effectiveDateEn = 'May 15, 2026';
+
+const SITE = 'https://simpleinvesting.org';
+const privacyDesc =
+	'Polityka prywatności SimpleInvesting: przetwarzanie danych, cookies, analityka (PostHog), Supabase Auth, Cloudflare Turnstile i kontakt.';
+const jsonLdPrivacy = {
+	'@context': 'https://schema.org',
+	'@graph': [
+		{
+			'@type': 'WebPage',
+			'@id': `${SITE}/privacy-policy#webpage`,
+			url: `${SITE}/privacy-policy`,
+			name: 'Polityka prywatności | SimpleInvesting',
+			description: privacyDesc,
+			isPartOf: { '@id': `${SITE}/#website` },
+			inLanguage: ['pl', 'en'],
+		},
+		{
+			'@type': 'BreadcrumbList',
+			'@id': `${SITE}/privacy-policy#breadcrumb`,
+			itemListElement: [
+				{
+					'@type': 'ListItem',
+					position: 1,
+					name: 'SimpleInvesting',
+					item: `${SITE}/`,
+				},
+				{
+					'@type': 'ListItem',
+					position: 2,
+					name: 'Polityka prywatności',
+					item: `${SITE}/privacy-policy`,
+				},
+			],
+		},
+	],
+};
+
+export const prerender = true;
 ---
 
-<Layout title="Polityka prywatności | SimpleInvesting">
+<Layout
+	title="Polityka prywatności | SimpleInvesting"
+	description={privacyDesc}
+	canonicalPath="/privacy-policy"
+>
+	<JsonLd slot="seo-jsonld" data={jsonLdPrivacy} />
 	<main class="min-h-screen bg-theme-bg text-theme-text">
 		<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
 			<div class="flex items-center justify-between gap-4 mb-8">
