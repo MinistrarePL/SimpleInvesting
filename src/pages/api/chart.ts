@@ -3,6 +3,98 @@ import type { APIRoute } from 'astro';
 const RANGE_KEYS = ['1m', '3m', '6m', '1y', '5y'] as const;
 type ChartRange = (typeof RANGE_KEYS)[number];
 
+const INTERVAL_KEYS = ['d', 'w', 'm'] as const;
+type ChartInterval = (typeof INTERVAL_KEYS)[number];
+
+type OhlcRow = {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume?: number | null;
+};
+
+/** Poniedziałek tygodnia UTC (klucz yyyy-mm-dd). */
+function weekMondayUtcKey(dateStr: string): string {
+  const d = new Date(`${dateStr}T12:00:00Z`);
+  const dow = d.getUTCDay();
+  const daysFromMonday = (dow + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - daysFromMonday);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function aggregateWeekly(points: OhlcRow[]): OhlcRow[] {
+  if (points.length === 0) return [];
+  const buckets = new Map<string, OhlcRow[]>();
+  for (const p of points) {
+    const key = weekMondayUtcKey(p.date);
+    let arr = buckets.get(key);
+    if (!arr) {
+      arr = [];
+      buckets.set(key, arr);
+    }
+    arr.push(p);
+  }
+  const keys = [...buckets.keys()].sort((a, b) => a.localeCompare(b));
+  return keys.map((key) => {
+    const pts = buckets.get(key)!.sort((a, b) => a.date.localeCompare(b.date));
+    const first = pts[0]!;
+    const last = pts[pts.length - 1]!;
+    let high = first.high;
+    let low = first.low;
+    for (const q of pts) {
+      high = Math.max(high, q.high);
+      low = Math.min(low, q.low);
+    }
+    return {
+      date: last.date,
+      open: first.open,
+      high,
+      low,
+      close: last.close,
+      volume: null,
+    };
+  });
+}
+
+function aggregateMonthly(points: OhlcRow[]): OhlcRow[] {
+  if (points.length === 0) return [];
+  const buckets = new Map<string, OhlcRow[]>();
+  for (const p of points) {
+    const key = p.date.slice(0, 7);
+    let arr = buckets.get(key);
+    if (!arr) {
+      arr = [];
+      buckets.set(key, arr);
+    }
+    arr.push(p);
+  }
+  const keys = [...buckets.keys()].sort((a, b) => a.localeCompare(b));
+  return keys.map((key) => {
+    const pts = buckets.get(key)!.sort((a, b) => a.date.localeCompare(b.date));
+    const first = pts[0]!;
+    const last = pts[pts.length - 1]!;
+    let high = first.high;
+    let low = first.low;
+    for (const q of pts) {
+      high = Math.max(high, q.high);
+      low = Math.min(low, q.low);
+    }
+    return {
+      date: last.date,
+      open: first.open,
+      high,
+      low,
+      close: last.close,
+      volume: null,
+    };
+  });
+}
+
 function isSafeSymbol(s: string): boolean {
   return /^[A-Za-z0-9.\-]+$/.test(s) && s.length >= 1 && s.length <= 32;
 }
@@ -42,6 +134,7 @@ export const GET: APIRoute = async ({ request }) => {
   const symbol = (url.searchParams.get('symbol') || '').trim();
   const exchange = (url.searchParams.get('exchange') || '').trim().toUpperCase();
   const rangeRaw = (url.searchParams.get('range') || '1y').toLowerCase();
+  const intervalRaw = (url.searchParams.get('interval') || 'd').toLowerCase();
 
   if (!symbol || !isSafeSymbol(symbol)) {
     return new Response(JSON.stringify({ error: 'Invalid or missing "symbol"' }), {
@@ -61,8 +154,15 @@ export const GET: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+  if (!(INTERVAL_KEYS as readonly string[]).includes(intervalRaw)) {
+    return new Response(JSON.stringify({ error: `Invalid "interval"; use ${INTERVAL_KEYS.join(', ')}` }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   const range = rangeRaw as ChartRange;
+  const interval = intervalRaw as ChartInterval;
 
   const apiKey = import.meta.env.EODHD_API_KEY || process.env.EODHD_API_KEY;
   if (!apiKey || apiKey === 'your_api_key_here') {
@@ -97,8 +197,8 @@ export const GET: APIRoute = async ({ request }) => {
       });
     }
 
-    /** Chronological OHLC rows for Highcharts stock */
-    const points = (
+    /** Chronological daily OHLC (EODHD), potem opcjonalna agregacja tyg./mies. */
+    let points: OhlcRow[] = (
       data as {
         date: string;
         open: number;
@@ -126,7 +226,10 @@ export const GET: APIRoute = async ({ request }) => {
         };
       });
 
-    return new Response(JSON.stringify({ range, symbol, exchange, points }), {
+    if (interval === 'w') points = aggregateWeekly(points);
+    else if (interval === 'm') points = aggregateMonthly(points);
+
+    return new Response(JSON.stringify({ range, interval, symbol, exchange, points }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, max-age=300' },
     });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, CandlestickChart, LineChart as LineChartIcon, Info } from 'lucide-react';
+import { X, CandlestickChart, LineChart as LineChartIcon, Info, Maximize2, Minimize2 } from 'lucide-react';
 import Highcharts from 'highcharts/highstock';
 import HighchartsReact from 'highcharts-react-official';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -21,6 +21,7 @@ const PIE_COLORS = [
 ];
 
 type ChartRange = '1m' | '3m' | '6m' | '1y' | '5y';
+type ChartInterval = 'd' | 'w' | 'm';
 
 interface ChartOHLCRow {
   date: string;
@@ -52,10 +53,26 @@ function fmtPct(n: number | null | undefined, digits = 2) {
 
 export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps) {
   const { t, i18n } = useTranslation();
-  const [chartType, setChartType] = useState<'line' | 'candle'>('line');
+  const [chartInterval, setChartInterval] = useState<ChartInterval>('d');
+  const [chartType, setChartType] = useState<'line' | 'candle'>('candle');
   const [chartRange, setChartRange] = useState<ChartRange>('1y');
   const [chartPoints, setChartPoints] = useState<ChartOHLCRow[]>([]);
   const [chartFetch, setChartFetch] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+  const [chartPopupOpen, setChartPopupOpen] = useState(false);
+  const [chartPopupMounted, setChartPopupMounted] = useState(false);
+  const [chartPopupVisible, setChartPopupVisible] = useState(false);
+
+  useEffect(() => {
+    if (chartPopupOpen) {
+      setChartPopupMounted(true);
+      const raf = requestAnimationFrame(() => setChartPopupVisible(true));
+      return () => cancelAnimationFrame(raf);
+    } else {
+      setChartPopupVisible(false);
+      const timer = setTimeout(() => setChartPopupMounted(false), SLIDE_PANEL_DURATION_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [chartPopupOpen]);
   const [detail, setDetail] = useState<EtfDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -125,7 +142,13 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
   }, [row?.id]);
 
   useEffect(() => {
-    if (isOpen) setChartRange('1y');
+    if (!isOpen) {
+      setChartPopupOpen(false);
+      return;
+    }
+    setChartRange('1y');
+    setChartInterval('d');
+    setChartPopupOpen(false);
   }, [isOpen, row?.id]);
 
   useEffect(() => {
@@ -139,7 +162,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     let cancelled = false;
     setChartFetch('loading');
 
-    const q = `/api/chart?symbol=${encodeURIComponent(row.ticker)}&exchange=${encodeURIComponent(ex)}&range=${chartRange}`;
+    const q = `/api/chart?symbol=${encodeURIComponent(row.ticker)}&exchange=${encodeURIComponent(ex)}&range=${chartRange}&interval=${chartInterval}`;
     fetch(q)
       .then((res) => res.json())
       .then((data: { error?: string; points?: ChartOHLCRow[] }) => {
@@ -162,7 +185,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     return () => {
       cancelled = true;
     };
-  }, [row?.ticker, row?.exchange, chartRange]);
+  }, [row?.ticker, row?.exchange, chartRange, chartInterval]);
 
   const combined: EtfDetail | null = row ? (detail ?? (row as EtfDetail)) : null;
 
@@ -193,6 +216,12 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     { key: '5y', labelKey: 'panel.range5y' },
   ];
 
+  const INTERVAL_TABS: { key: ChartInterval; labelKey: string }[] = [
+    { key: 'd', labelKey: 'panel.intervalDaily' },
+    { key: 'w', labelKey: 'panel.intervalWeekly' },
+    { key: 'm', labelKey: 'panel.intervalMonthly' },
+  ];
+
   const sectorChartData = useMemo(() => {
     const rows = combined?.etf_sectors?.filter((s) => (s.equity_pct ?? 0) > 0) ?? [];
     return rows.map((s) => ({ name: s.sector, value: Number(s.equity_pct) }));
@@ -208,7 +237,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     return [...h].sort((a, b) => a.rank - b.rank);
   }, [combined]);
 
-  const chartOptions = useMemo(() => {
+  const chartOptionsByLayout = useMemo(() => {
     const isBrowser = typeof window !== 'undefined';
     const isDark = isBrowser ? document.documentElement.classList.contains('dark') : false;
 
@@ -219,34 +248,39 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     const downColor = isDark ? '#fb7185' : '#e11d48';
     const bgColor = 'transparent';
 
-    return {
-      chart: {
-        backgroundColor: bgColor,
-        style: { fontFamily: 'Inter, sans-serif' },
-        spacing: [20, 0, 10, 0],
-      },
-      title: { text: null },
+    const base = {
+      title: { text: null as string | null },
       credits: { enabled: false },
-      navigator: { enabled: false },
-      scrollbar: { enabled: false },
+      exporting: { enabled: false },
       rangeSelector: { enabled: false },
       xAxis: {
-        type: 'datetime',
+        type: 'datetime' as const,
+        lineWidth: 1,
+        tickWidth: 1,
         lineColor: gridColor,
         tickColor: gridColor,
-        labels: { style: { color: textColor } },
-        crosshair: { color: gridColor, dashStyle: 'Dash' },
+        labels: {
+          style: { color: textColor, fontSize: '11px' },
+          y: 18,
+        },
+        dateTimeLabelFormats: {
+          day: '%e %b',
+          week: '%e %b \'%y',
+          month: "%b '%y",
+          year: '%Y',
+        },
+        crosshair: { color: gridColor, dashStyle: 'Dash' as const },
       },
       yAxis: {
-        title: { text: null },
+        title: { text: null as string | null },
         gridLineColor: gridColor,
-        gridLineDashStyle: 'Dash',
+        gridLineDashStyle: 'Dash' as const,
+        opposite: true,
         labels: {
-          style: { color: textColor },
-          align: 'left',
-          x: 5,
+          style: { color: textColor, fontSize: '11px' },
+          x: -4,
         },
-        crosshair: { color: gridColor, dashStyle: 'Dash' },
+        crosshair: { color: gridColor, dashStyle: 'Dash' as const },
       },
       tooltip: {
         backgroundColor: isDark ? '#1e293b' : '#ffffff',
@@ -258,7 +292,7 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
       plotOptions: {
         candlestick: {
           color: downColor,
-          upColor: upColor,
+          upColor,
           lineColor: downColor,
           upLineColor: upColor,
           borderWidth: 0,
@@ -274,28 +308,75 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
         chartFetch === 'ok' && ohlcMs.length
           ? [
               {
-                type: chartType === 'candle' ? 'candlestick' : 'line',
+                type: (chartType === 'candle' ? 'candlestick' : 'line') as string,
                 name: row?.ticker,
                 data:
                   chartType === 'candle'
                     ? ohlcMs
                     : ohlcMs.map((pt) => [pt[0]!, pt[4]!] as [number, number]),
-                tooltip: {
-                  valueDecimals: 2,
-                },
+                tooltip: { valueDecimals: 2 },
               },
             ]
           : [],
     };
-  }, [ohlcMs, chartType, row?.ticker, chartFetch]);
+
+    const embedded = {
+      ...base,
+      chart: {
+        backgroundColor: bgColor,
+        style: { fontFamily: 'Inter, sans-serif' },
+        animation: false,
+        panning: { enabled: true, type: 'x' },
+        panKey: undefined,
+        zooming: { type: 'x', mouseWheel: { enabled: true } },
+      },
+      navigator: { enabled: false },
+      scrollbar: { enabled: false },
+    };
+
+    const popup = {
+      ...base,
+      chart: {
+        backgroundColor: bgColor,
+        style: { fontFamily: 'Inter, sans-serif' },
+        animation: false,
+        panning: { enabled: true, type: 'x' },
+        panKey: undefined,
+        zooming: { type: 'x', mouseWheel: { enabled: true } },
+      },
+      navigator: {
+        enabled: true,
+        height: 30,
+        margin: 12,
+        series: { color: primaryColor, lineWidth: 1 },
+        xAxis: {
+          labels: { style: { color: textColor, fontSize: '10px' } },
+        },
+        maskFill: isDark ? 'rgba(45,212,191,0.12)' : 'rgba(20,184,166,0.10)',
+        outlineColor: gridColor,
+        handles: {
+          backgroundColor: isDark ? '#475569' : '#cbd5e1',
+          borderColor: gridColor,
+        },
+      },
+      scrollbar: { enabled: false },
+    };
+
+    return { embedded, popup };
+  }, [ohlcMs, chartType, row?.ticker, chartFetch, chartInterval]);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && row) onClose();
+      if (e.key !== 'Escape') return;
+      if (chartPopupOpen) {
+        setChartPopupOpen(false);
+        return;
+      }
+      if (isOpen && row) onClose();
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose, isOpen, row]);
+  }, [onClose, isOpen, row, chartPopupOpen]);
 
   useEffect(() => {
     if (isOpen || heldEtf) {
@@ -336,8 +417,68 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
         aria-hidden="true"
       />
 
+      {chartPopupMounted && row ? (
+        <div
+          className={`fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6 lg:p-10 transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.33,1,0.68,1)] ${chartPopupVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/55 backdrop-blur-sm"
+            aria-label={t('panel.chartCollapse')}
+            onClick={() => setChartPopupOpen(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('panel.chartPopupAria')}
+            className={`relative z-[1] flex flex-col w-full max-w-[min(1500px,96vw)] max-h-[92vh] bg-theme-surface border border-theme-border rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 [transition-timing-function:cubic-bezier(0.33,1,0.68,1)] ${chartPopupVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-theme-border px-5 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-theme-text truncate">
+                  {row.ticker}
+                  <span className="ml-2 font-normal text-theme-text-muted">· {row.exchange || 'US'}</span>
+                </p>
+                <p className="text-xs text-theme-text-muted truncate">{row.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setChartPopupOpen(false)}
+                className="shrink-0 flex items-center justify-center rounded-full p-2 text-theme-text-muted hover:bg-theme-bg hover:text-theme-text transition-colors"
+                title={t('panel.chartCollapse')}
+                aria-label={t('panel.chartCollapse')}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 p-3 lg:p-5 overflow-hidden">
+              <div className="relative w-full h-full">
+                <HighchartsReact
+                  key={`etf-chart-${row.ticker}-${chartRange}-${chartInterval}-${chartType}-popup`}
+                  highcharts={Highcharts}
+                  constructorType="stockChart"
+                  options={chartOptionsByLayout.popup}
+                  containerProps={{ style: { height: '100%', width: '100%' } }}
+                />
+                {chartFetch === 'loading' && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-theme-surface/80 rounded-xl text-sm text-theme-text-muted">
+                    {t('panel.chartLoading')}
+                  </div>
+                )}
+                {chartFetch === 'error' && (
+                  <div className="absolute bottom-2 left-2 right-2 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>{t('panel.chartLoadError')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-full max-w-none lg:w-[min(50vw,42rem)] bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen && entered ? 'translate-x-0' : 'translate-x-full'} ${row ? '' : 'pointer-events-none'}`}
+        className={`fixed inset-y-0 right-0 z-50 w-full max-w-none md:w-1/2 2xl:w-2/5 bg-theme-surface border-l border-theme-border shadow-2xl transform flex flex-col ${drawerMotionClasses} ${isOpen && entered ? 'translate-x-0' : 'translate-x-full'} ${row ? '' : 'pointer-events-none'}`}
       >
         {row ? (
           <>
@@ -404,48 +545,79 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 justify-end mb-3">
-              <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
-                {RANGE_TABS.map(({ key, labelKey }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setChartRange(key)}
-                    className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                  >
-                    {t(labelKey)}
-                  </button>
-                ))}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between mb-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium uppercase tracking-wide text-theme-text-muted w-full sm:w-auto sm:mr-1">
+                  {t('panel.chartInterval')}
+                </span>
+                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
+                  {INTERVAL_TABS.map(({ key, labelKey }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setChartInterval(key)}
+                      className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                        chartInterval === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'
+                      }`}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setChartType('line')}
-                  className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                  title={t('panel.chartLine')}
-                >
-                  <LineChartIcon className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setChartType('candle')}
-                  className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
-                  title={t('panel.chartCandle')}
-                >
-                  <CandlestickChart className="w-4 h-4" />
-                </button>
+              <div className="flex flex-wrap items-center gap-2 justify-end sm:flex-1 sm:min-w-0">
+                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border flex-wrap">
+                  {RANGE_TABS.map(({ key, labelKey }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setChartRange(key)}
+                      className={`px-2 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${chartRange === key ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    >
+                      {t(labelKey)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex bg-theme-bg rounded-lg p-1 border border-theme-border shrink-0 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setChartType('line')}
+                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'line' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    title={t('panel.chartLine')}
+                  >
+                    <LineChartIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartType('candle')}
+                    className={`p-1.5 rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${chartType === 'candle' ? 'bg-theme-surface text-theme-primary shadow-sm' : 'text-theme-text-muted hover:text-theme-text'}`}
+                    title={t('panel.chartCandle')}
+                  >
+                    <CandlestickChart className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartPopupOpen(true)}
+                    className={`p-1.5 rounded-md flex items-center text-sm font-medium transition-colors text-theme-text-muted hover:text-theme-text`}
+                    title={t('panel.chartExpand')}
+                    aria-label={t('panel.chartExpand')}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="relative h-80 w-full bg-theme-bg/50 rounded-xl p-4 border border-theme-border overflow-hidden">
+            <div className="relative w-full bg-theme-bg/50 rounded-xl border border-theme-border overflow-hidden">
               <HighchartsReact
+                key={`etf-chart-${row.ticker}-${chartRange}-${chartInterval}-${chartType}-embed`}
                 highcharts={Highcharts}
                 constructorType={'stockChart'}
-                options={chartOptions}
-                containerProps={{ style: { height: '100%', width: '100%' } }}
+                options={chartOptionsByLayout.embedded}
+                containerProps={{ style: { width: '100%' } }}
               />
               {chartFetch === 'loading' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-theme-surface/70 text-sm text-theme-text-muted">
+                <div className="absolute inset-0 flex items-center justify-center bg-theme-surface/70 rounded-xl text-sm text-theme-text-muted">
                   {t('panel.chartLoading')}
                 </div>
               )}
