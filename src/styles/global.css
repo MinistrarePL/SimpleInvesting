@@ -40,14 +40,14 @@
     --badge-bg: color-mix(in srgb, var(--color-teal-500) 15%, transparent);
     --badge-text: var(--color-teal-800);
     --badge-border: color-mix(in srgb, var(--color-teal-500) 20%, transparent);
-    --return-pos: var(--color-green-600);
-    --return-neg: var(--color-red-600);
+    --return-pos: var(--color-emerald-600);
+    --return-neg: var(--color-rose-600);
 
-    --danger-zone-heading: var(--color-red-600);
-    --danger-zone-button-text: var(--color-red-600);
-    --danger-zone-button-border: var(--color-red-600);
-    --danger-zone-ring: var(--color-red-600);
-    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-red-600) 11%, transparent);
+    --danger-zone-heading: var(--color-rose-600);
+    --danger-zone-button-text: var(--color-rose-600);
+    --danger-zone-button-border: var(--color-rose-600);
+    --danger-zone-ring: var(--color-rose-600);
+    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-rose-600) 11%, transparent);
   }
 
   .dark {
@@ -64,15 +64,15 @@
     --badge-bg: color-mix(in srgb, var(--color-teal-500) 15%, transparent);
     --badge-text: var(--color-teal-400);
     --badge-border: transparent;
-    --return-pos: var(--color-green-500);
-    --return-neg: var(--color-red-500);
+    --return-pos: var(--color-emerald-400);
+    --return-neg: var(--color-rose-400);
 
-    /* Danger zone — ciemny motyw: Tailwind red-500 */
-    --danger-zone-heading: var(--color-red-500);
-    --danger-zone-button-text: var(--color-red-500);
-    --danger-zone-button-border: var(--color-red-500);
-    --danger-zone-ring: var(--color-red-500);
-    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-red-500) 22%, transparent);
+    /* Danger zone — ten sam „negative” co zwroty: dark rose-400 */
+    --danger-zone-heading: var(--color-rose-400);
+    --danger-zone-button-text: var(--color-rose-400);
+    --danger-zone-button-border: var(--color-rose-400);
+    --danger-zone-ring: var(--color-rose-400);
+    --danger-zone-button-hover-bg: color-mix(in srgb, var(--color-rose-400) 22%, transparent);
   }
 
   body {

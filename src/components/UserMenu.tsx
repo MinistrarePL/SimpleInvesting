@@ -106,7 +106,7 @@ export default function UserMenu({ session, onLogout, onOpenSettings }: UserMenu
           <button
             type="button"
             role="menuitem"
-            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-theme-text-muted hover:text-red-500 hover:bg-theme-bg text-left"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-theme-text-muted hover:text-rose-600 dark:hover:text-rose-400 hover:bg-theme-bg text-left"
             onClick={() => {
               setOpen(false);
               void onLogout();

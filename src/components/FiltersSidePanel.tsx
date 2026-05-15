@@ -444,12 +444,87 @@ const TOOLTIP_MARGIN = 8;
 
 function InfoTooltip({ text }: { text: string }) {
   const mdUp = useIsMdBreakpointUp();
-  if (!mdUp) {
-    return <p className="w-full mt-1 text-xs text-theme-text-muted leading-snug">{text}</p>;
-  }
-  return <InfoTooltipPopover text={text} />;
+  return mdUp ? <InfoTooltipPopover text={text} /> : <InfoTooltipModal text={text} />;
 }
 
+/** Mobile / wąski panel: pełnoekranowy popup z treścią po tapnięciu „i”. */
+function InfoTooltipModal({ text }: { text: string }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  const modal =
+    open && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[250] flex items-end justify-center sm:items-center sm:p-4"
+            role="presentation"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/50 border-0 cursor-default"
+              aria-label={t('panel.close')}
+              onClick={() => setOpen(false)}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="relative z-[1] w-full max-h-[min(70vh,28rem)] sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-theme-border bg-theme-surface p-5 shadow-2xl text-left"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="absolute top-3 right-3 p-2 rounded-lg text-theme-text-muted hover:text-theme-text hover:bg-theme-bg transition-colors"
+                aria-label={t('panel.close')}
+              >
+                <X className="w-5 h-5" aria-hidden />
+              </button>
+              <p className="text-sm text-theme-text leading-relaxed pr-10">{text}</p>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="p-0.5 rounded text-theme-text-muted hover:text-theme-primary transition-colors shrink-0"
+        aria-label="Info"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {modal}
+    </>
+  );
+}
+
+/** Desktop: mały panel przy ikonie (klik). */
 function InfoTooltipPopover({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);

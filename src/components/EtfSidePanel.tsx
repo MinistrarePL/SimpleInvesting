@@ -17,7 +17,7 @@ interface EtfSidePanelProps {
 }
 
 const PIE_COLORS = [
-  '#14b8a6', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#ef4444', '#3b82f6', '#84cc16', '#64748b',
+  '#14b8a6', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#e11d48', '#3b82f6', '#84cc16', '#64748b',
 ];
 
 type ChartRange = '1m' | '3m' | '6m' | '1y' | '5y';
@@ -215,8 +215,8 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
     const textColor = isDark ? '#f8fafc' : '#0f172a';
     const gridColor = isDark ? '#334155' : '#e2e8f0';
     const primaryColor = isDark ? '#2dd4bf' : '#14b8a6';
-    const upColor = isDark ? '#22c55e' : '#16a34a';
-    const downColor = isDark ? '#ef4444' : '#dc2626';
+    const upColor = isDark ? '#34d399' : '#059669';
+    const downColor = isDark ? '#fb7185' : '#e11d48';
     const bgColor = 'transparent';
 
     return {
