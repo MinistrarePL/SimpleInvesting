@@ -2,8 +2,8 @@
 import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
 
-const effectiveDate = '12 maja 2026';
-const effectiveDateEn = 'May 12, 2026';
+const effectiveDate = '15 maja 2026';
+const effectiveDateEn = 'May 15, 2026';
 ---
 
 <Layout title="Polityka prywatności | SimpleInvesting">
@@ -101,8 +101,13 @@ const effectiveDateEn = 'May 12, 2026';
 								<td class="p-3 align-top">Art. 6 ust. 1 lit. f RODO</td>
 								<td class="p-3 align-top">Do upływu terminu przedawnienia roszczeń (zwykle do 6 lat)</td>
 							</tr>
+							<tr class="border-b border-theme-border">
+								<td class="p-3 align-top">Analityka korzystania z Serwisu i nagrania sesji (PostHog) – wyłącznie po wyrażeniu zgody</td>
+								<td class="p-3 align-top">Art. 6 ust. 1 lit. a RODO – Twoja zgoda</td>
+								<td class="p-3 align-top">Do czasu wycofania zgody lub wygaśnięcia ciasteczka (do 12 miesięcy)</td>
+							</tr>
 							<tr>
-								<td class="p-3 align-top">Pliki cookies analityczne lub marketingowe (jeśli zostaną w przyszłości włączone)</td>
+								<td class="p-3 align-top">Cookies marketingowe (jeśli zostaną w przyszłości włączone)</td>
 								<td class="p-3 align-top">Art. 6 ust. 1 lit. a RODO – Twoja zgoda</td>
 								<td class="p-3 align-top">Do czasu wycofania zgody lub wygaśnięcia ciasteczka</td>
 							</tr>
@@ -128,6 +133,13 @@ const effectiveDateEn = 'May 12, 2026';
 						<strong>Google Ireland Limited</strong> – obsługa logowania przez Google (Google OAuth).
 					</li>
 					<li>
+						<strong>PostHog Inc. (chmura UE, Frankfurt)</strong> – analityka korzystania z Serwisu, nagrania sesji
+						(zanonimizowane interakcje w interfejsie) i heatmapy. Dane są przekazywane do PostHog
+						<strong>wyłącznie po wyrażeniu przez Ciebie zgody</strong> na cookies analityczne; bez zgody PostHog nie
+						jest inicjalizowany i nie zbiera żadnych informacji. Dane przetwarzane są w regionie UE
+						(<a href="https://eu.i.posthog.com" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">eu.i.posthog.com</a>).
+					</li>
+					<li>
 						<strong>EOD Historical Data (EODHD)</strong> – płatny dostawca danych rynkowych o funduszach ETF.
 						EODHD <em>nie</em> otrzymuje od nas Twoich danych osobowych – jest źródłem danych o instrumentach finansowych,
 						a nie odbiorcą danych użytkowników.
@@ -141,7 +153,8 @@ const effectiveDateEn = 'May 12, 2026';
 				<h2 class="text-xl font-semibold mt-8 mb-3">5. Przekazywanie danych poza EOG</h2>
 				<p class="leading-relaxed mb-3">
 					Część naszych dostawców (w szczególności <strong>Netlify</strong> oraz <strong>Google</strong>) ma siedzibę w Stanach Zjednoczonych,
-					co może powodować transfer danych poza Europejski Obszar Gospodarczy. Transfery te odbywają się z zachowaniem
+					co może powodować transfer danych poza Europejski Obszar Gospodarczy. <strong>PostHog</strong> ma siedzibę w USA,
+					jednak dane Serwisu kierujemy wyłącznie do jego chmury w regionie <strong>UE (Frankfurt)</strong>. Transfery te odbywają się z zachowaniem
 					mechanizmów zabezpieczających przewidzianych w RODO, tj.:
 				</p>
 				<ul class="list-disc pl-6 space-y-1 mb-3">
@@ -210,19 +223,21 @@ const effectiveDateEn = 'May 12, 2026';
 						Te cookies nie wymagają zgody (art. 173 ust. 3 pkt 2 Prawa telekomunikacyjnego / art. 6 ust. 1 lit. f RODO).
 					</li>
 					<li>
-						<strong>Analityczne</strong> <em>(planowane w przyszłości)</em> – służyłyby do mierzenia ruchu i sposobu korzystania
-						z Serwisu w sposób zagregowany. Aktualnie <strong>nie są używane</strong>. W momencie ich wdrożenia będą wymagały
-						Twojej wyraźnej zgody udzielonej za pośrednictwem bannera cookies.
+						<strong>Analityczne (PostHog)</strong> – stosowane <strong>wyłącznie po wyrażeniu zgody</strong> w bannerze cookies.
+						Pozwalają nam mierzyć ruch, sposób korzystania z Serwisu (np. kliknięte przyciski, otwierane panele)
+						oraz prowadzić <strong>nagrania sesji</strong> i heatmapy – w celu wykrywania błędów UX i ulepszania Serwisu.
+						Pola formularzy (m.in. hasło, e-mail) są maskowane. Dane trafiają do chmury PostHog w regionie UE.
 					</li>
 					<li>
 						<strong>Marketingowe</strong> <em>(planowane w przyszłości)</em> – aktualnie <strong>nie są używane</strong>.
-						Tak jak analityczne, będą wymagały odrębnej zgody.
+						Będą wymagały odrębnej zgody.
 					</li>
 				</ul>
 				<p class="leading-relaxed mb-3">
 					Zgodę na cookies analityczne i marketingowe możesz w dowolnej chwili wycofać klikając w link
-					„Ustawienia cookies” w stopce lub czyszcząc dane przeglądarki. Większość przeglądarek umożliwia również
-					samodzielne zarządzanie cookies w ustawieniach.
+					„Ustawienia cookies” w stopce lub czyszcząc dane przeglądarki. Wycofanie zgody powoduje, że PostHog
+					przestaje zbierać dane (opt-out). Większość przeglądarek umożliwia również samodzielne zarządzanie cookies
+					w ustawieniach.
 				</p>
 
 				<h2 class="text-xl font-semibold mt-8 mb-3">11. Zmiany polityki</h2>
@@ -312,10 +327,15 @@ const effectiveDateEn = 'May 12, 2026';
 								<td class="p-3 align-top">Art. 6(1)(f) GDPR</td>
 								<td class="p-3 align-top">Until expiry of the limitation period (typically up to 6 years)</td>
 							</tr>
-							<tr>
-								<td class="p-3 align-top">Analytical or marketing cookies (if enabled in the future)</td>
+							<tr class="border-b border-theme-border">
+								<td class="p-3 align-top">Service usage analytics and session replays (PostHog) – only with your consent</td>
 								<td class="p-3 align-top">Art. 6(1)(a) GDPR – your consent</td>
-								<td class="p-3 align-top">Until consent is withdrawn or cookie expires</td>
+								<td class="p-3 align-top">Until consent is withdrawn or the cookie expires (up to 12 months)</td>
+							</tr>
+							<tr>
+								<td class="p-3 align-top">Marketing cookies (if enabled in the future)</td>
+								<td class="p-3 align-top">Art. 6(1)(a) GDPR – your consent</td>
+								<td class="p-3 align-top">Until consent is withdrawn or the cookie expires</td>
 							</tr>
 						</tbody>
 					</table>
@@ -332,6 +352,11 @@ const effectiveDateEn = 'May 12, 2026';
 					<li><strong>Netlify, Inc.</strong> – hosting and server-side rendering. Netlify is based in the United States,
 						which may involve transfers outside the European Economic Area (see Section 5).</li>
 					<li><strong>Google Ireland Limited</strong> – Google OAuth sign-in.</li>
+					<li><strong>PostHog Inc. (EU cloud, Frankfurt)</strong> – product analytics, session replays
+						(anonymised interface interactions) and heatmaps. Data is sent to PostHog
+						<strong>only after you give consent</strong> to analytical cookies; without consent PostHog is not
+						initialised and collects nothing. Data is processed in the EU region
+						(<a href="https://eu.i.posthog.com" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">eu.i.posthog.com</a>).</li>
 					<li><strong>EOD Historical Data (EODHD)</strong> – a paid market data provider for ETFs.
 						EODHD does <em>not</em> receive any of your personal data – it is a source of financial instrument data,
 						not a recipient of user data.</li>
@@ -343,7 +368,8 @@ const effectiveDateEn = 'May 12, 2026';
 				<h2 class="text-xl font-semibold mt-8 mb-3">5. International data transfers</h2>
 				<p class="leading-relaxed mb-3">
 					Some of our providers (in particular <strong>Netlify</strong> and <strong>Google</strong>) are based in the United States,
-					which may result in transfers of personal data outside the European Economic Area. Such transfers are carried out
+					which may result in transfers of personal data outside the European Economic Area. <strong>PostHog</strong> is based in
+					the U.S., but Service data is sent exclusively to its <strong>EU cloud (Frankfurt)</strong>. Such transfers are carried out
 					with safeguards required by the GDPR:
 				</p>
 				<ul class="list-disc pl-6 space-y-1 mb-3">
@@ -408,14 +434,17 @@ const effectiveDateEn = 'May 12, 2026';
 					<li><strong>Strictly necessary</strong> – required for the proper operation of the Service, in particular
 						to maintain authenticated sessions (Supabase Auth cookies) and to remember preferences (e.g. light/dark theme, language).
 						These do not require consent (Art. 6(1)(f) GDPR / Art. 173(3)(2) of the Polish Telecommunications Act).</li>
-					<li><strong>Analytical</strong> <em>(planned in the future)</em> – they would measure aggregate traffic and usage.
-						They are <strong>not currently used</strong>. Once enabled, they will require your explicit consent via the cookie banner.</li>
+					<li><strong>Analytical (PostHog)</strong> – used <strong>only after your consent</strong> in the cookie banner.
+						They let us measure traffic, how the Service is used (e.g. clicked buttons, opened panels), and to capture
+						<strong>session replays</strong> and heatmaps – in order to detect UX issues and improve the Service.
+						Form fields (including passwords and e-mail) are masked. Data is sent to the PostHog EU cloud.</li>
 					<li><strong>Marketing</strong> <em>(planned in the future)</em> – currently <strong>not used</strong>.
-						Like analytical cookies, they will require separate consent.</li>
+						They will require separate consent.</li>
 				</ul>
 				<p class="leading-relaxed mb-3">
 					You may withdraw consent to analytical and marketing cookies at any time by clicking the
-					&ldquo;Cookie settings&rdquo; link in the footer or by clearing your browser data.
+					&ldquo;Cookie settings&rdquo; link in the footer or by clearing your browser data. Withdrawing consent
+					opts you out of PostHog data collection.
 				</p>
 
 				<h2 class="text-xl font-semibold mt-8 mb-3">11. Changes to this policy</h2>

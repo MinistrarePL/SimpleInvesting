@@ -48,6 +48,11 @@ export default function PostHogInit() {
           capture_pageleave: true,
           persistence: 'localStorage+cookie',
           disable_surveys: true,
+          /** GDPR: maskuj wszystkie pola formularzy w nagraniach sesji (hasła, e-mail itd.). */
+          session_recording: {
+            maskAllInputs: true,
+            maskTextSelector: '[data-private], input, textarea',
+          },
         });
         sdkReady.current = true;
       }
