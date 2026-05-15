@@ -151,7 +151,7 @@ const GRID_DENSITY_LS_OVERRIDE_KEY = 'si.grid-density-override';
 /** Ręczny wybór tylko do końca sesji zakładki — nie „przykleja” comfort z większego monitora na laptopie. */
 const GRID_DENSITY_SESSION_OVERRIDE_KEY = 'si.grid-density-session-override';
 /** Szerokość viewportu ≥ tej wartości ⇒ tryb comfort (auto). Poniżej ⇒ compact. */
-const GRID_COMFORT_MIN_WIDTH_PX = 1920;
+const GRID_COMFORT_MIN_WIDTH_PX = 1536;
 type GridDensity = 'comfort' | 'compact';
 
 interface DashboardProps {
