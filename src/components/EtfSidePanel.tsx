@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, CandlestickChart, LineChart as LineChartIcon, Info, Maximize2, Minimize2 } from 'lucide-react';
+import { X, CandlestickChart, LineChart as LineChartIcon, Info, Maximize2, Minimize2, Eye, EyeOff } from 'lucide-react';
 import Highcharts from 'highcharts/highstock';
 import HighchartsReact from 'highcharts-react-official';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -8,12 +8,18 @@ import type { EtfDetail, EtfRow } from '../types/etf';
 import { supabase } from './AuthModal';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import GlossaryText from './GlossaryText';
+import HoverTooltip from './HoverTooltip';
 import { drawerMotionClasses, overlayMotionClasses, SLIDE_PANEL_DURATION_MS } from '../lib/panelMotion';
+import { classifyRisk } from '../lib/etfFilters';
 
 interface EtfSidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   etf: EtfRow | null;
+  /** Zalogowany: toggle watchlisty dla ETF z nagłówka panelu */
+  watchlistInteractive?: boolean;
+  isWatchlistedFn?: (etfId: string) => boolean;
+  onToggleWatchlist?: (etfId: string) => void;
 }
 
 const PIE_COLORS = [
@@ -51,7 +57,14 @@ function fmtPct(n: number | null | undefined, digits = 2) {
   return `${n.toFixed(digits)}%`;
 }
 
-export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps) {
+export default function EtfSidePanel({
+  isOpen,
+  onClose,
+  etf,
+  watchlistInteractive = false,
+  isWatchlistedFn,
+  onToggleWatchlist,
+}: EtfSidePanelProps) {
   const { t, i18n } = useTranslation();
   const [chartInterval, setChartInterval] = useState<ChartInterval>('d');
   const [chartType, setChartType] = useState<'line' | 'candle'>('candle');
@@ -188,6 +201,8 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
   }, [row?.ticker, row?.exchange, chartRange, chartInterval]);
 
   const combined: EtfDetail | null = row ? (detail ?? (row as EtfDetail)) : null;
+
+  const riskBucket = useMemo(() => (combined ? classifyRisk(combined) : null), [combined]);
 
   const panelDescription =
     combined == null
@@ -495,13 +510,35 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
               </span>
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
-            title={t('panel.close')}
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {watchlistInteractive && row?.id && isWatchlistedFn && onToggleWatchlist && (
+              <HoverTooltip
+                tooltip={
+                  isWatchlistedFn(row.id) ? t('panel.removeFromWatchlist') : t('panel.addToWatchlist')
+                }
+              >
+                <button
+                  type="button"
+                  onClick={() => onToggleWatchlist(row.id)}
+                  className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-primary"
+                  aria-pressed={isWatchlistedFn(row.id)}
+                  aria-label={
+                    isWatchlistedFn(row.id) ? t('panel.removeFromWatchlist') : t('panel.addToWatchlist')
+                  }
+                >
+                  {isWatchlistedFn(row.id) ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+                </button>
+              </HoverTooltip>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-full hover:bg-theme-bg transition-colors text-theme-text-muted hover:text-theme-text"
+              title={t('panel.close')}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -643,6 +680,12 @@ export default function EtfSidePanel({ isOpen, onClose, etf }: EtfSidePanelProps
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('table.currency')}</div>
                 <div className="font-medium text-theme-text">{combined!.currency || '—'}</div>
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
+                <div className="text-theme-text-muted text-xs">{t('filters.risk.title')}</div>
+                <div className="font-medium text-theme-text">
+                  {riskBucket ? t(`filters.risk.${riskBucket}`) : '—'}
+                </div>
               </div>
               <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.issuer')}</div>

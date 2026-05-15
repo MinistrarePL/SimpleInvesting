@@ -75,6 +75,17 @@ const resources = {
         placeholder: 'Szukaj w tabeli',
         clear: 'Wyczyść wyszukiwanie',
       },
+      nav: {
+        etfList: 'Lista ETF',
+        watchlist: 'Watchlista',
+        aria: 'Nawigacja główna',
+      },
+      watchlist: {
+        title: 'Watchlista',
+        empty:
+          'Twoja watchlista jest pusta. Dodaj ETF-y z poziomu szczegółów funduszu (ikonka oka w nagłówku panelu).',
+        removeAria: 'Usuń z watchlisty',
+      },
       filters: {
         openBtn: 'Filtry',
         requireAccountForFilters:
@@ -214,6 +225,8 @@ const resources = {
         topHoldings: 'Top 10 holdingów',
         holdingName: 'Nazwa',
         holdingSector: 'Sektor',
+        addToWatchlist: 'Dodaj do watchlisty',
+        removeFromWatchlist: 'Usuń z watchlisty',
       },
       theme: {
         light: 'Jasny motyw',
@@ -249,6 +262,8 @@ const resources = {
         privacyLink: 'politykę prywatności',
         mustAcceptLegal: 'Aby założyć konto, musisz zaakceptować regulamin i politykę prywatności.',
         captchaFailed: 'Nie udało się przejść weryfikacji antybotowej. Odśwież stronę i spróbuj ponownie.',
+        captchaDevHint:
+          'Supabase wymaga tokenu Turnstile. Ustaw PUBLIC_TURNSTILE_SITE_KEY w pliku .env (jak na produkcji), zrestartuj serwer dev. W Cloudflare Turnstile przy tym kluczu dodaj hostname localhost (oraz ewentualnie 127.0.0.1), żeby widget działał lokalnie.',
         captchaNotice: 'Chronione przez Cloudflare Turnstile.',
         captchaNoticeLink: 'Polityka prywatności',
         accountSettings: 'Ustawienia konta',
@@ -348,6 +363,17 @@ const resources = {
       search: {
         placeholder: 'Search the table',
         clear: 'Clear search',
+      },
+      nav: {
+        etfList: 'ETF list',
+        watchlist: 'Watchlist',
+        aria: 'Main navigation',
+      },
+      watchlist: {
+        title: 'Watchlist',
+        empty:
+          'Your watchlist is empty. Add funds from the detail panel (eye icon in the header).',
+        removeAria: 'Remove from watchlist',
       },
       filters: {
         openBtn: 'Filters',
@@ -487,6 +513,8 @@ const resources = {
         topHoldings: 'Top 10 holdings',
         holdingName: 'Name',
         holdingSector: 'Sector',
+        addToWatchlist: 'Add to watchlist',
+        removeFromWatchlist: 'Remove from watchlist',
       },
       theme: {
         light: 'Light theme',
@@ -522,6 +550,8 @@ const resources = {
         privacyLink: 'privacy policy',
         mustAcceptLegal: 'You must accept the terms of service and privacy policy to create an account.',
         captchaFailed: 'Anti-bot verification failed. Please refresh the page and try again.',
+        captchaDevHint:
+          'Supabase requires a Turnstile token. Add PUBLIC_TURNSTILE_SITE_KEY to your .env (same as production) and restart the dev server. In Cloudflare Turnstile for that site key, add hostnames localhost (and optionally 127.0.0.1) so the widget works locally.',
         captchaNotice: 'Protected by Cloudflare Turnstile.',
         captchaNoticeLink: 'Privacy Policy',
         accountSettings: 'Account settings',
@@ -551,14 +581,8 @@ const resources = {
   }
 };
 
-const initialLang = (() => {
-  if (typeof window === 'undefined') return 'pl';
-  try {
-    const stored = localStorage.getItem('si.lang');
-    if (stored === 'pl' || stored === 'en') return stored;
-  } catch (e) {}
-  return 'pl';
-})();
+/** SSR i pierwszy render na kliencie muszą mieć ten sam język (uniknięcie hydration mismatch). Preferencje z localStorage stosuje Dashboard po mount — `si.lang`. */
+const initialLang = 'pl';
 
 i18n
   .use(initReactI18next)

@@ -17,6 +17,8 @@ import {
   SlidersHorizontal,
   Shrink,
   Expand,
+  LayoutList,
+  Eye,
 } from 'lucide-react';
 import '../i18n/config'; // Inicjalizacja i18n
 import EtfSidePanel from './EtfSidePanel';
@@ -25,6 +27,7 @@ import AuthModal, { supabase } from './AuthModal';
 import AccountSettingsPanel from './AccountSettingsPanel';
 import UserMenu from './UserMenu';
 import HoverTooltip from './HoverTooltip';
+import WatchlistTable from './WatchlistTable';
 import { useIsMdBreakpointUp, useShowHoverPortalTooltips } from '../lib/pointerPreference';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
@@ -230,6 +233,11 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'register' | 'reset' | 'update_password'>('login');
 
+  const [activeView, setActiveView] = useState<'etf-list' | 'watchlist'>('etf-list');
+  const [watchlistIds, setWatchlistIds] = useState<Set<string>>(() => new Set());
+  const [wlPageIndex, setWlPageIndex] = useState(0);
+  const [wlPageSize, setWlPageSize] = useState<PageSizeOption>(100);
+
   // Nasłuchiwanie na zmiany stanu logowania w Supabase
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -251,6 +259,47 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!session) setActiveView('etf-list');
+  }, [session]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!session?.user?.id) {
+        if (!cancelled) setWatchlistIds(new Set());
+        return;
+      }
+      const { data, error } = await supabase.from('watchlist').select('etf_id');
+      if (cancelled) return;
+      if (error) {
+        console.error('[watchlist] load failed', error.message);
+        return;
+      }
+      setWatchlistIds(new Set((data ?? []).map((r: { etf_id: string }) => r.etf_id)));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    setWlPageIndex(0);
+  }, [activeView]);
+
+  /** Po hydration: przywróć język z localStorage (init i18n = zawsze `pl`, żeby SSR zgadzał się z pierwszym rysowaniem). */
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('si.lang');
+      if (stored === 'pl' || stored === 'en') {
+        void i18n.changeLanguage(stored);
+        window.dispatchEvent(new CustomEvent('si:lang-change', { detail: stored }));
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [i18n]);
 
   /** Otwarcie kart szczegółów ETF dla gościa: po przekroczeniu limitu wymuszamy modal logowania. */
   const handleEtfRowClick = useCallback(
@@ -294,6 +343,33 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  const addToWatchlistCb = useCallback(async (etfId: string) => {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    const { error } = await supabase.from('watchlist').insert({ user_id: uid, etf_id: etfId });
+    if (!error) setWatchlistIds((prev) => new Set(prev).add(etfId));
+  }, [session?.user?.id]);
+
+  const removeFromWatchlistCb = useCallback(async (etfId: string) => {
+    const { error } = await supabase.from('watchlist').delete().eq('etf_id', etfId);
+    if (!error)
+      setWatchlistIds((prev) => {
+        const n = new Set(prev);
+        n.delete(etfId);
+        return n;
+      });
+  }, []);
+
+  const toggleWatchlistCb = useCallback(
+    async (etfId: string) => {
+      if (watchlistIds.has(etfId)) await removeFromWatchlistCb(etfId);
+      else await addToWatchlistCb(etfId);
+    },
+    [watchlistIds, removeFromWatchlistCb, addToWatchlistCb],
+  );
+
+  const watchlistContains = useCallback((etfId: string) => watchlistIds.has(etfId), [watchlistIds]);
 
   // Filtrowanie ETF-ów na podstawie wpisanego tekstu + zaawansowanych filtrów
   const filteredEtfs = useMemo(() => {
@@ -342,6 +418,11 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   }, [etfs, searchQuery, sortKey, sortDir, filters]);
 
   const filteredCount = filteredEtfs.length;
+
+  const watchlistEtfsFiltered = useMemo(
+    () => etfs.filter((e) => watchlistIds.has(e.id)),
+    [etfs, watchlistIds],
+  );
 
   const langUi: 'pl' | 'en' = i18n.language?.startsWith('pl') ? 'pl' : 'en';
 
@@ -462,10 +543,21 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
     setPageIndex(0);
   }, [searchQuery, sortKey, sortDir, filters]);
 
+  const wlTotalPages = watchlistEtfsFiltered.length === 0 ? 1 : Math.ceil(watchlistEtfsFiltered.length / wlPageSize);
+
+  useEffect(() => {
+    setWlPageIndex((i) => Math.min(i, Math.max(0, wlTotalPages - 1)));
+  }, [wlTotalPages]);
+
   const paginatedEtfs = useMemo(() => {
     const start = pageIndex * pageSize;
     return filteredEtfs.slice(start, start + pageSize);
   }, [filteredEtfs, pageIndex, pageSize]);
+
+  const watchlistPaginatedRows = useMemo(() => {
+    const start = wlPageIndex * wlPageSize;
+    return watchlistEtfsFiltered.slice(start, start + wlPageSize);
+  }, [watchlistEtfsFiltered, wlPageIndex, wlPageSize]);
 
   const tableHScrollRef = useRef<HTMLDivElement>(null);
   const tableTopScrollRef = useRef<HTMLDivElement>(null);
@@ -681,7 +773,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-theme-bg text-theme-text transition-colors duration-300">
+    <div className="flex flex-col min-h-screen bg-theme-bg text-theme-text transition-colors duration-300">
       {/* Header */}
       <header className="border-b border-theme-border bg-theme-surface sticky top-0 z-10">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -790,8 +882,84 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         </div>
       </header>
 
-      {/* Główna zawartość - Tabela */}
-      <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {session && (
+        <nav
+          className="md:hidden flex border-b border-theme-border bg-theme-surface px-3 py-2 gap-2 max-w-[1920px] mx-auto w-full"
+          aria-label={t('nav.aria')}
+        >
+          <button
+            type="button"
+            onClick={() => setActiveView('etf-list')}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              activeView === 'etf-list'
+                ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+            }`}
+          >
+            <LayoutList className="w-4 h-4 shrink-0" aria-hidden />
+            <span>{t('nav.etfList')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('watchlist')}
+            className={`relative flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              activeView === 'watchlist'
+                ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+            }`}
+          >
+            <Eye className="w-4 h-4 shrink-0" aria-hidden />
+            <span>{t('nav.watchlist')}</span>
+            {watchlistIds.size > 0 && (
+              <span className="absolute top-1 right-3 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-teal-600 text-[10px] font-bold text-white">
+                {watchlistIds.size > 99 ? '99+' : watchlistIds.size}
+              </span>
+            )}
+          </button>
+        </nav>
+      )}
+
+      <div className="flex flex-1 min-h-0 w-full max-w-[1920px] mx-auto">
+        {session && (
+          <aside
+            className="hidden md:flex w-52 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] border-r border-theme-border bg-theme-surface flex-col gap-1 py-6 px-3"
+            aria-label={t('nav.aria')}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveView('etf-list')}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors ${
+                activeView === 'etf-list'
+                  ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                  : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+              }`}
+            >
+              <LayoutList className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
+              <span>{t('nav.etfList')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('watchlist')}
+              className={`relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors ${
+                activeView === 'watchlist'
+                  ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                  : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+              }`}
+            >
+              <Eye className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
+              <span className="flex-1 min-w-0">{t('nav.watchlist')}</span>
+              {watchlistIds.size > 0 && (
+                <span className="tabular-nums rounded-full bg-theme-bg px-2 py-0.5 text-xs text-theme-text-muted shrink-0">
+                  {watchlistIds.size > 999 ? '999+' : watchlistIds.size}
+                </span>
+              )}
+            </button>
+          </aside>
+        )}
+
+      <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
+        {activeView === 'etf-list' && (
+          <>
         
         {/* Wyszukiwarka + Filtry */}
         <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-stretch">
@@ -1133,7 +1301,33 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             </div>
           </div>
         </div>
+          </>
+        )}
+
+        {activeView === 'watchlist' && session && (
+          <>
+            <h2 className="text-xl font-bold text-theme-text mb-6">{t('watchlist.title')}</h2>
+            <WatchlistTable
+              rows={watchlistPaginatedRows}
+              totalCount={watchlistEtfsFiltered.length}
+              compact={compact}
+              pageSize={wlPageSize}
+              pageIndex={wlPageIndex}
+              onPageSizeChange={(v) => {
+                setWlPageSize(v);
+                setWlPageIndex(0);
+              }}
+              onPageIndexChange={setWlPageIndex}
+              onRowClick={handleEtfRowClick}
+              onRemoveFromWatchlist={(id, event) => {
+                event.stopPropagation();
+                void removeFromWatchlistCb(id);
+              }}
+            />
+          </>
+        )}
       </main>
+      </div>
 
       {/* Wyjaśnienia nagłówków tabeli */}
       {infoColumn && (
@@ -1172,10 +1366,15 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       )}
 
       {/* Boczny panel ze szczegółami ETF */}
-      <EtfSidePanel 
-        isOpen={!!selectedEtf} 
-        onClose={() => setSelectedEtf(null)} 
-        etf={selectedEtf} 
+      <EtfSidePanel
+        isOpen={!!selectedEtf}
+        onClose={() => setSelectedEtf(null)}
+        etf={selectedEtf}
+        watchlistInteractive={!!session?.user?.id}
+        isWatchlistedFn={watchlistContains}
+        onToggleWatchlist={(etfId) => {
+          void toggleWatchlistCb(etfId);
+        }}
       />
 
       {/* Boczny panel filtrów */}
