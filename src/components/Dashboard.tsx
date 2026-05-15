@@ -648,7 +648,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             <img 
               src={theme === 'dark' ? '/logo_dark.svg' : '/logo_light.svg'} 
               alt="SimpleInvesting Logo" 
-              className="h-8 w-auto" 
+              className="h-6 w-auto sm:h-8" 
             />
           </div>
 
@@ -752,7 +752,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         
         {/* Wyszukiwarka + Filtry */}
         <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-stretch">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-theme-text-muted" />
             </div>
@@ -776,29 +776,31 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
               </HoverTooltip>
             )}
           </div>
-          <HoverTooltip
-            tooltip={session ? t('filters.title') : t('filters.requireAccountForFilters')}
-            className="shrink-0 inline-flex"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                if (session) {
-                  setIsFiltersOpen(true);
-                } else {
-                  setAuthView('login');
-                  setAuthHeaderNotice(t('filters.requireAccountForFilters'));
-                  setIsAuthModalOpen(true);
-                }
-              }}
-              className="btn-primary shrink-0"
-              aria-haspopup="dialog"
-              aria-expanded={isFiltersOpen}
+          <div className="flex w-full justify-end sm:contents">
+            <HoverTooltip
+              tooltip={session ? t('filters.title') : t('filters.requireAccountForFilters')}
+              className="shrink-0 inline-flex"
             >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span>{t('filters.openBtn')}</span>
-            </button>
-          </HoverTooltip>
+              <button
+                type="button"
+                onClick={() => {
+                  if (session) {
+                    setIsFiltersOpen(true);
+                  } else {
+                    setAuthView('login');
+                    setAuthHeaderNotice(t('filters.requireAccountForFilters'));
+                    setIsAuthModalOpen(true);
+                  }
+                }}
+                className="btn-primary shrink-0"
+                aria-haspopup="dialog"
+                aria-expanded={isFiltersOpen}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>{t('filters.openBtn')}</span>
+              </button>
+            </HoverTooltip>
+          </div>
         </div>
 
         {activeFilterChips.length > 0 && (

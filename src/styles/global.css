@@ -146,9 +146,9 @@
     width: 0;
   }
 
-  /** Poziomy scroll dużej tabeli na touch — jeden kontener, mniej walki scrollLeft + lepszy momentum. */
+  /** Poziomy scroll na touch bez blokowania pionowego scrollu dokumentu (`pan-x` sam w sobie usuwały pan-y). */
   .table-h-scroll-touch {
-    touch-action: pan-x pinch-zoom;
+    touch-action: pan-x pan-y pinch-zoom;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
   }
