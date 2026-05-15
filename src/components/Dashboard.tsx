@@ -152,6 +152,29 @@ const GRID_DENSITY_LS_OVERRIDE_KEY = 'si.grid-density-override';
 const GRID_DENSITY_SESSION_OVERRIDE_KEY = 'si.grid-density-session-override';
 /** Szerokość viewportu ≥ tej wartości ⇒ tryb comfort (auto). Poniżej ⇒ compact. */
 const GRID_COMFORT_MIN_WIDTH_PX = 1536;
+/** Licznik otwarć panelu szczegółów ETF dla niezalogowanych (bez konta). */
+const ETF_DETAIL_OPEN_COUNT_KEY = 'si.etf-detail-open-count';
+const ETF_DETAIL_OPEN_LIMIT = 3;
+
+function readEtfDetailOpenCount(): number {
+  try {
+    const v = localStorage.getItem(ETF_DETAIL_OPEN_COUNT_KEY);
+    if (v == null) return 0;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeEtfDetailOpenCount(n: number) {
+  try {
+    localStorage.setItem(ETF_DETAIL_OPEN_COUNT_KEY, String(n));
+  } catch {
+    /* ignore */
+  }
+}
+
 type GridDensity = 'comfort' | 'compact';
 
 interface DashboardProps {
@@ -228,6 +251,26 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  /** Otwarcie kart szczegółów ETF dla gościa: po przekroczeniu limitu wymuszamy modal logowania. */
+  const handleEtfRowClick = useCallback(
+    (etf: EtfRow) => {
+      if (session) {
+        setSelectedEtf(etf);
+        return;
+      }
+      const count = readEtfDetailOpenCount();
+      if (count >= ETF_DETAIL_OPEN_LIMIT) {
+        setAuthView('login');
+        setAuthHeaderNotice(t('panel.viewLimitReached'));
+        setIsAuthModalOpen(true);
+        return;
+      }
+      writeEtfDetailOpenCount(count + 1);
+      setSelectedEtf(etf);
+    },
+    [session, t],
+  );
 
   /** Stare klucze w localStorage blokowały RDW (np. comfort z dużego ekranu na laptopie). */
   useEffect(() => {
@@ -960,7 +1003,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                   paginatedEtfs.map((etf) => (
                     <tr
                       key={etf.id}
-                      onClick={() => setSelectedEtf(etf)}
+                      onClick={() => handleEtfRowClick(etf)}
                       className="hover:bg-theme-bg/50 transition-colors group cursor-pointer"
                     >
                       <td className={gx.tdWide}>

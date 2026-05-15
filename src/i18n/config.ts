@@ -165,6 +165,8 @@ const resources = {
         },
       },
       panel: {
+        viewLimitReached:
+          'Bezpłatnie możesz otworzyć tylko 3 karty szczegółów ETF. Zaloguj się lub załóż konto, aby przeglądać dalej.',
         close: 'Zamknij panel',
         chartLine: 'Liniowy',
         chartCandle: 'Świecowy',
@@ -436,6 +438,8 @@ const resources = {
         },
       },
       panel: {
+        viewLimitReached:
+          'You can open up to 3 ETF detail cards for free. Log in or create an account to continue.',
         close: 'Close panel',
         chartLine: 'Line',
         chartCandle: 'Candlestick',
