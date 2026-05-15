@@ -1,19 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-const CONSENT_STORAGE_KEY = 'si.cookieConsent';
-
-function readAnalyticsConsent(): boolean {
-  try {
-    const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as { analytics?: boolean };
-    return !!parsed.analytics;
-  } catch {
-    return false;
-  }
-}
-
-
+import { readAnalyticsConsent } from '../lib/analyticsConsent';
 
 /**
  * Initializes PostHog (EU cloud) only after analytics cookie consent.
@@ -41,13 +28,13 @@ export default function PostHogInit() {
       }
 
       if (!sdkReady.current) {
+        // Surveys bez `disable_surveys` — wygląd/pozycja popovera w PostHog → Surveys.
         posthog.init(key.trim(), {
           api_host: host,
           person_profiles: 'identified_only',
           capture_pageview: true,
           capture_pageleave: true,
           persistence: 'localStorage+cookie',
-          disable_surveys: true,
           /** GDPR: maskuj wszystkie pola formularzy w nagraniach sesji (hasła, e-mail itd.). */
           session_recording: {
             maskAllInputs: true,

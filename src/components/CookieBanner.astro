@@ -132,15 +132,15 @@
 	(function () {
 		var STORAGE_KEY = 'si.cookieConsent';
 		var LANG_KEY = 'si.lang';
-		var banner = document.getElementById('cookie-banner');
-		var modal = document.getElementById('cookie-settings');
-		if (!banner || !modal) return;
 
 		function readConsent() {
 			try {
+				if (typeof Storage === 'undefined' || typeof localStorage === 'undefined' || !localStorage) return null;
 				var raw = localStorage.getItem(STORAGE_KEY);
 				if (!raw) return null;
-				return JSON.parse(raw);
+				var parsed = JSON.parse(raw);
+				if (!parsed || typeof parsed !== 'object') return null;
+				return parsed;
 			} catch (e) {
 				return null;
 			}
@@ -148,13 +148,17 @@
 
 		function saveConsent(consent) {
 			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify({
-					version: 1,
-					timestamp: new Date().toISOString(),
-					necessary: true,
-					analytics: !!consent.analytics,
-					marketing: !!consent.marketing
-				}));
+				if (typeof Storage === 'undefined' || typeof localStorage === 'undefined' || !localStorage) return;
+				localStorage.setItem(
+					STORAGE_KEY,
+					JSON.stringify({
+						version: 1,
+						timestamp: new Date().toISOString(),
+						necessary: true,
+						analytics: !!consent.analytics,
+						marketing: !!consent.marketing,
+					}),
+				);
 			} catch (e) {}
 			window.dispatchEvent(new CustomEvent('si:cookie-consent', { detail: consent }));
 		}
@@ -171,70 +175,92 @@
 
 		function detectLang() {
 			try {
-				var stored = localStorage.getItem(LANG_KEY);
-				if (stored === 'en' || stored === 'pl') return stored;
+				if (typeof Storage !== 'undefined' && typeof localStorage !== 'undefined' && localStorage) {
+					var stored = localStorage.getItem(LANG_KEY);
+					if (stored === 'en' || stored === 'pl') return stored;
+				}
 			} catch (e) {}
 			var nav = (navigator.language || 'pl').toLowerCase();
 			return nav.indexOf('pl') === 0 ? 'pl' : 'en';
 		}
 
-		function showBanner() {
-			applyLang(detectLang());
-			banner.classList.remove('hidden');
-		}
-		function hideBanner() {
-			banner.classList.add('hidden');
-		}
-		function openSettings() {
-			applyLang(detectLang());
-			var consent = readConsent() || { analytics: false, marketing: false };
-			modal.querySelectorAll('[data-cb-toggle="analytics"]').forEach(function (cb) { cb.checked = !!consent.analytics; });
-			modal.querySelectorAll('[data-cb-toggle="marketing"]').forEach(function (cb) { cb.checked = !!consent.marketing; });
-			modal.classList.remove('hidden');
-		}
-		function closeSettings() {
-			modal.classList.add('hidden');
-		}
+		function boot() {
+			var banner = document.getElementById('cookie-banner');
+			var modal = document.getElementById('cookie-settings');
+			if (!banner || !modal) return;
 
-		document.addEventListener('click', function (e) {
-			var target = e.target;
-			if (!(target instanceof Element)) return;
-			var actionEl = target.closest('[data-cb-action]');
-			if (!actionEl) return;
-			var action = actionEl.getAttribute('data-cb-action');
-			if (action === 'accept-all') {
-				saveConsent({ analytics: true, marketing: true });
-				hideBanner();
-				closeSettings();
-			} else if (action === 'necessary') {
-				saveConsent({ analytics: false, marketing: false });
-				hideBanner();
-				closeSettings();
-			} else if (action === 'settings') {
-				openSettings();
-			} else if (action === 'settings-close') {
-				closeSettings();
-			} else if (action === 'save') {
-				var analytics = !!modal.querySelector('[data-cb-toggle="analytics"]:checked');
-				var marketing = !!modal.querySelector('[data-cb-toggle="marketing"]:checked');
-				saveConsent({ analytics: analytics, marketing: marketing });
-				hideBanner();
-				closeSettings();
-			}
-		});
-
-		window.openCookieSettings = function () {
-			openSettings();
-		};
-
-		window.addEventListener('storage', function (e) {
-			if (e.key === LANG_KEY) {
+			function showBanner() {
 				applyLang(detectLang());
+				banner.classList.remove('hidden');
 			}
-		});
+			function hideBanner() {
+				banner.classList.add('hidden');
+			}
+			function openSettings() {
+				applyLang(detectLang());
+				var consent = readConsent() || { analytics: false, marketing: false };
+				modal.querySelectorAll('[data-cb-toggle="analytics"]').forEach(function (cb) {
+					cb.checked = !!consent.analytics;
+				});
+				modal.querySelectorAll('[data-cb-toggle="marketing"]').forEach(function (cb) {
+					cb.checked = !!consent.marketing;
+				});
+				modal.classList.remove('hidden');
+			}
+			function closeSettings() {
+				modal.classList.add('hidden');
+			}
 
-		if (!readConsent()) {
-			showBanner();
+			document.addEventListener('click', function (e) {
+				var target = e.target;
+				if (!(target instanceof Element)) return;
+				var actionEl = target.closest('[data-cb-action]');
+				if (!actionEl) return;
+				var action = actionEl.getAttribute('data-cb-action');
+				if (action === 'accept-all') {
+					saveConsent({ analytics: true, marketing: true });
+					hideBanner();
+					closeSettings();
+				} else if (action === 'necessary') {
+					saveConsent({ analytics: false, marketing: false });
+					hideBanner();
+					closeSettings();
+				} else if (action === 'settings') {
+					openSettings();
+				} else if (action === 'settings-close') {
+					closeSettings();
+				} else if (action === 'save') {
+					var analytics = !!modal.querySelector('[data-cb-toggle="analytics"]:checked');
+					var marketing = !!modal.querySelector('[data-cb-toggle="marketing"]:checked');
+					saveConsent({ analytics: analytics, marketing: marketing });
+					hideBanner();
+					closeSettings();
+				}
+			});
+
+			window.openCookieSettings = function () {
+				openSettings();
+			};
+
+			window.addEventListener('storage', function (e) {
+				if (e.key === LANG_KEY) {
+					try {
+						applyLang(detectLang());
+					} catch (err) {}
+				}
+			});
+
+			try {
+				if (!readConsent()) showBanner();
+			} catch (e) {
+				showBanner();
+			}
+		}
+
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', boot);
+		} else {
+			boot();
 		}
 	})();
 </script>

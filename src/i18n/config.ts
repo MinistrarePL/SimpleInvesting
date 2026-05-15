@@ -82,6 +82,11 @@ const resources = {
         expandNav: 'Rozwiń panel nawigacji',
         collapseNav: 'Zwiń panel nawigacji',
       },
+      feedback: {
+        button: 'Opinia',
+        buttonAria: 'Otwórz formularz opinii',
+        needAnalyticsHint: 'Najpierw włącz analitykę w ustawieniach cookies (lub „Akceptuj wszystkie”).',
+      },
       watchlist: {
         title: 'Watchlista',
         empty:
@@ -372,6 +377,11 @@ const resources = {
         aria: 'Main navigation',
         expandNav: 'Expand navigation panel',
         collapseNav: 'Collapse navigation panel',
+      },
+      feedback: {
+        button: 'Feedback',
+        buttonAria: 'Open feedback form',
+        needAnalyticsHint: 'Turn on analytics in cookie settings (or “Accept all”) first.',
       },
       watchlist: {
         title: 'Watchlist',
