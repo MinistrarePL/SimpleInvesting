@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createClient } from '@supabase/supabase-js';
 import { X, Mail, Lock, Loader2 } from 'lucide-react';
+import {
+  executeTurnstile,
+  removeTurnstile,
+  renderInvisibleTurnstile,
+} from '../lib/turnstile';
 
 // Inicjalizacja klienta Supabase dla frontendu (używa klucza anonimowego)
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+/** Cloudflare Turnstile - publiczny site key (pusty w dev = brak captchy, Supabase i tak ją wymusi gdy włączysz w panelu Auth). */
+const TURNSTILE_SITE_KEY = (import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined)?.trim() || '';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -28,6 +36,40 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
 
   const termsHref = '/terms-of-service';
   const privacyHref = '/privacy-policy';
+
+  const turnstileHostRef = useRef<HTMLDivElement>(null);
+  const turnstileWidgetIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || !TURNSTILE_SITE_KEY) return;
+    let cancelled = false;
+    (async () => {
+      const host = turnstileHostRef.current;
+      if (!host) return;
+      const id = await renderInvisibleTurnstile(host, TURNSTILE_SITE_KEY);
+      if (cancelled) {
+        if (id) removeTurnstile(id);
+        return;
+      }
+      turnstileWidgetIdRef.current = id;
+    })();
+    return () => {
+      cancelled = true;
+      const id = turnstileWidgetIdRef.current;
+      if (id) {
+        removeTurnstile(id);
+        turnstileWidgetIdRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  const obtainCaptchaToken = async (): Promise<string | undefined> => {
+    if (!TURNSTILE_SITE_KEY) return undefined;
+    const id = turnstileWidgetIdRef.current;
+    if (!id) return undefined;
+    const token = await executeTurnstile(id);
+    return token ?? undefined;
+  };
 
   // Zamykanie klawiszem ESC
   useEffect(() => {
@@ -65,10 +107,22 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
     }
 
     try {
+      const needsCaptcha = view === 'login' || view === 'register' || view === 'reset';
+      let captchaToken: string | undefined;
+      if (needsCaptcha && TURNSTILE_SITE_KEY) {
+        captchaToken = await obtainCaptchaToken();
+        if (!captchaToken) {
+          setError(t('auth.captchaFailed'));
+          setLoading(false);
+          return;
+        }
+      }
+
       if (view === 'login') {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
+          ...(captchaToken ? { options: { captchaToken } } : {}),
         });
         if (error) throw error;
         onClose(); // Sukces -> zamykamy modal
@@ -76,12 +130,14 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          ...(captchaToken ? { options: { captchaToken } } : {}),
         });
         if (error) throw error;
         setSuccess(t('auth.successRegister'));
       } else if (view === 'reset') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: window.location.origin,
+          ...(captchaToken ? { captchaToken } : {}),
         });
         if (error) throw error;
         setSuccess(t('auth.successReset'));
@@ -152,6 +208,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
 
           {/* Formularz */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4 flex-1 overflow-y-auto min-h-0">
+            {/* Host dla Cloudflare Turnstile (invisible). Renderuje się tylko gdy SITE_KEY jest ustawiony. */}
+            <div ref={turnstileHostRef} aria-hidden="true" className="hidden" />
             {error && (
               <div className="p-3 text-sm text-rose-600 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 rounded-lg border border-rose-200 dark:border-rose-800/50">
                 {error}
@@ -295,6 +353,21 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', head
                   </button>
                 </div>
               </div>
+            )}
+
+            {TURNSTILE_SITE_KEY && (view === 'login' || view === 'register' || view === 'reset') && (
+              <p className="text-[11px] text-theme-text-muted text-center mt-2 leading-snug">
+                {t('auth.captchaNotice')}{' '}
+                <a
+                  href="https://www.cloudflare.com/privacypolicy/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-theme-text"
+                >
+                  {t('auth.captchaNoticeLink')}
+                </a>
+                .
+              </p>
             )}
 
             {view !== 'update_password' && (
