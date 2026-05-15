@@ -1,22 +1,503 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import '../styles/global.css';
+
+const effectiveDate = '15 maja 2026';
+const effectiveDateEn = 'May 15, 2026';
 ---
 
 <Layout title="Regulamin serwisu | SimpleInvesting">
 	<main class="min-h-screen bg-theme-bg text-theme-text">
 		<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-			<h1 class="text-3xl font-bold tracking-tight mb-6">Regulamin serwisu</h1>
-			<p class="text-theme-text-muted leading-relaxed mb-4">
-				Niniejszy dokument stanowi wstępną wersję regulaminu SimpleInvesting. Uzupełnij go o
-				warunki korzystania z serwisu, ograniczenia odpowiedzialności oraz zasady dotyczące danych
-				rynkowych zgodnie z Twoim modelem biznesowym i obowiązującym prawem.
-			</p>
-			<p class="text-theme-text-muted leading-relaxed">
-				<strong class="text-theme-text">English (draft):</strong> This is a placeholder terms of
-				service page. Replace with your final legal text and jurisdiction-specific clauses before
-				production launch.
-			</p>
+			<div class="flex items-center justify-between gap-4 mb-8">
+				<a
+					href="/"
+					class="text-sm font-medium text-theme-primary hover:text-theme-primary-hover underline underline-offset-2"
+				>
+					&larr; <span data-i18n="back-home-pl">Wróć do strony głównej</span><span data-i18n="back-home-en" class="hidden">Back to home</span>
+				</a>
+				<div class="inline-flex rounded-lg border border-theme-border overflow-hidden text-sm">
+					<button type="button" data-lang-btn="pl" class="px-3 py-1.5 font-medium bg-theme-primary text-white">PL</button>
+					<button type="button" data-lang-btn="en" class="px-3 py-1.5 font-medium bg-theme-surface text-theme-text hover:bg-theme-border/60">EN</button>
+				</div>
+			</div>
+
+			<article data-lang-content="pl" class="prose-legal">
+				<h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Regulamin świadczenia usług drogą elektroniczną</h1>
+				<p class="text-sm text-theme-text-muted mb-8">Data wejścia w życie: {effectiveDate}</p>
+
+				<p class="mb-6 leading-relaxed">
+					Niniejszy Regulamin określa zasady korzystania z serwisu internetowego <strong>SimpleInvesting</strong> (dalej: „<strong>Serwis</strong>”),
+					dostępnego pod adresem <a href="https://simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">simpleinvesting.org</a>.
+					Właścicielem i Usługodawcą Serwisu jest podmiot wskazany w §&nbsp;1 poniżej.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;1 Postanowienia ogólne</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>1.1.</strong> Regulamin jest udostępniany nieodpłatnie w sposób umożliwiający jego pozyskanie, odtwarzanie i utrwalanie
+					(art.&nbsp;8 ust.&nbsp;1 pkt&nbsp;1 ustawy z dnia 18&nbsp;lipca 2002&nbsp;r. o świadczeniu usług drogą elektroniczną — dalej: „USTUE”).
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>1.2.</strong> Rozpoczęcie korzystania z Serwisu oznacza akceptację Regulaminu. W przypadku zakładania Konta wyraźna akceptacja
+					następuje poprzez zaznaczenie pola wyboru w formularzu rejestracji.
+				</p>
+				<div class="rounded-xl border border-theme-border bg-theme-surface p-4 mb-3">
+					<p class="font-semibold mb-2">Usługodawca</p>
+					<p class="text-sm leading-relaxed">DOCEO Mateusz Głasek</p>
+					<p class="text-sm leading-relaxed">ul. Sadowa 12, 05-430 Glina, gmina Celestynów, powiat otwocki, województwo mazowieckie, Polska</p>
+					<p class="text-sm leading-relaxed">NIP: 5322088322, REGON: 385987479</p>
+					<p class="text-sm leading-relaxed">Adres do doręczeń elektronicznych: AE:PL-60036-64952-UJFUG-16</p>
+					<p class="text-sm leading-relaxed">Kontakt: <a href="mailto:contact@simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">contact@simpleinvesting.org</a></p>
+				</div>
+				<p class="leading-relaxed mb-3">
+					<strong>1.3.</strong> Niniejszy dokument nie zastępuje porady prawnej. W sprawach nietypowych należy skonsultować się z adwokatem lub radcą prawnym.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;2 Definicje</h2>
+				<ul class="list-disc pl-6 space-y-1 mb-3 text-sm leading-relaxed">
+					<li><strong>Serwis</strong> — strona internetowa i powiązane funkcje dostępne pod domeną simpleinvesting.org.</li>
+					<li><strong>Usługodawca</strong> — podmiot wskazany w §&nbsp;1.</li>
+					<li><strong>Użytkownik</strong> — każda osoba korzystająca z Serwisu.</li>
+					<li><strong>Konto</strong> — indywidualne konto Użytkownika utworzone w Serwisie po rejestracji.</li>
+					<li><strong>Treści</strong> — teksty, dane prezentacyjne, układ graficzny oraz oprogramowanie Serwisu — z wyłączeniem Danych Rynkowych w rozumieniu licencji podmiotów trzecich.</li>
+					<li><strong>ETF</strong> — fundusz notowany na giełdzie według typowej definicji rynkowej; w Serwisie prezentowany jest zbiór ogólnodostępnych informacji o takich instrumentach.</li>
+					<li><strong>Dane Rynkowe</strong> — informacje o instrumentach finansowych (w tym notowania cenowe lub kursy zamknięcia) pochodzące od zewnętrznych dostawców danych, w&nbsp;szczególności EOD Historical Data (EODHD).</li>
+					<li><strong>Polityka prywatności</strong> — dokument dostępny pod adresem <a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">/privacy-policy</a>.</li>
+				</ul>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;3 Rodzaj i zakres usług</h2>
+				<p class="leading-relaxed mb-3"><strong>3.1.</strong> Świadczone usługi drogą elektroniczną obejmują w&nbsp;szczególności:</p>
+				<ul class="list-disc pl-6 space-y-1 mb-3">
+					<li>oglądanie zbiorów danych o funduszach ETF (bez konieczności zakładania Konta),</li>
+					<li>po zalogowaniu: zapisywanie listy obserwowanych ETF oraz inne funkcje udostępnione w ustawieniach Konta,</li>
+					<li>prezentacja wykresów cenowych i podstawowych statystyk w oparciu o Dane Rynkowe,</li>
+					<li>mechanizm kontaktowy pocztą elektroniczną oraz obsługi reklamacji zgodnie z §&nbsp;12.</li>
+				</ul>
+				<p class="leading-relaxed mb-3">
+					<strong>3.2.</strong> Wszystkie usługi wskazane w ust.&nbsp;3.1 świadczone są <strong>nieodpłatnie</strong>. Nie oferujemy w ramach niniejszego Regulaminu funkcji lub treści pobierania opłat.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>3.3.</strong> Usługodawca może rozbudowywać lub ograniczać funkcje Serwisu z zachowaniem §&nbsp;15.</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;4 Wymagania techniczne</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>4.1.</strong> Do korzystania z Serwisu wymagane jest aktualnie utrzymywane urządzenie oraz przeglądarka internetowa (Chrome, Firefox, Safari, Edge lub ich odpowiedniki mobilne).
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>4.2.</strong> Serwis wymaga obsługi <strong>JavaScript</strong> oraz — w&nbsp;zakresie logowania i zapamiętywania ustawień — plików cookies opisanych w
+					<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Polityce prywatności</a>.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>4.3.</strong> Użytkownik ponosi koszt łącza internetowego po stronie operatora sieci telekomunikacyjnej.</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;5 Charakter informacyjny Serwisu — wyłączenie doradztwa inwestycyjnego</h2>
+
+				<div class="rounded-xl border-2 border-amber-500/50 dark:border-amber-400/40 bg-amber-500/[0.08] dark:bg-amber-950/30 p-4 sm:p-5 mb-4">
+					<p class="font-bold text-theme-text mb-2">Ważna informacja inwestycyjna</p>
+					<p class="text-sm leading-relaxed mb-2">
+						<strong>Serwis ma wyłącznie charakter informacyjny i edukacyjny.</strong> Dane i materiały w nim prezentowane <strong>nie stanowią rekomendacji inwestycyjnej</strong>
+						w rozumieniu Rozporządzenia Parlamentu Europejskiego i Rady (UE) nr&nbsp;596/2014 z dnia 16&nbsp;kwietnia 2014&nbsp;r.
+						w&nbsp;sprawie nadużyć na rynku (MAR) oraz <strong>Rozporządzenia Delegowanego Komisji (UE) 2016/958</strong> ani <strong>doradztwa inwestycyjnego</strong>
+						w rozumieniu Rozporządzenia Parlamentu Europejskiego i Rady (UE) nr&nbsp;600/2014 (MIFID II) ani ustawy z dnia 29&nbsp;lipca 2005&nbsp;r. o&nbsp;obrocie instrumentami finansowymi.
+					</p>
+					<p class="text-sm leading-relaxed mb-0">
+						Prezentowanie informacji o konkretnym funduszu, jego tickerze lub koszyku bazowym nie oznacza rekomendacji jego zakupu ani sprzedaży.
+						<strong>Inwestowanie w instrumenty pochodne i fundusze notowane na giełdzie wiąże się z ryzykiem utraty całości lub części zainwestowanego kapitału.</strong>
+						Wszystkie decyzje inwestycyjne podejmujesz wyłącznie na <strong>własną odpowiedzialność</strong> i po samodzielnej ocenie swojej wiedzy, sytuacji finansowej i tolerancji ryzyka.
+					</p>
+				</div>
+
+				<div class="overflow-x-auto mb-4">
+					<table class="w-full text-sm border border-theme-border rounded-lg overflow-hidden">
+						<thead class="bg-theme-surface">
+							<tr>
+								<th class="text-left p-3 border-b border-theme-border">Co oferuje Serwis?</th>
+								<th class="text-left p-3 border-b border-theme-border">Czego Serwis <em>nie</em> oferuje?</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="border-b border-theme-border">
+								<td class="p-3 align-top">Zagregowane dane prezentacyjne, wykresy i narzędzia do przeglądania ETF.</td>
+								<td class="p-3 align-top"> Indywidualnej rekomendacji inwestycyjnej dostosowanej do sytuacji majątkowej Użytkownika.</td>
+							</tr>
+							<tr>
+								<td class="p-3 align-top">Udostępnianie funkcji Konta dla własnej organizacji list obserwowanych.</td>
+								<td class="p-3 align-top">Doradztwa prawnego, podatkowego lub księgowego oraz obsługi transakcji zakupu papierów wartościowych.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;6 Źródła i jakość Danych Rynkowych</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>6.1.</strong> W celu prezentacji wykresów i cen możemy korzystać z Dane Rynkowych udostępnianych przez
+					<strong>EOD Historical Data (EODHD)</strong> oraz innych dostawców danych. Szczegóły techniczne i ograniczenia licencyjne spoczywają na podmiotach trzecich.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>6.2.</strong> Dane Rynkowe:</p>
+				<ul class="list-disc pl-6 space-y-1 mb-3">
+					<li>mogą być <strong>opóźnione</strong> (np. w relacji zamknięcia notowania do końca dnia sesyjnego „EOD”, a nie „real-time”),</li>
+					<li>mogą zawierać <strong>błędy lub luki</strong> w serie czasowych,</li>
+					<li>są udostępniane w Serwisie w stanie „<strong>tak jak są</strong>” („as&nbsp;is”) — bez gwarancji kompletności, aktualności ani przydatności do konkretnego celu.</li>
+				</ul>
+				<p class="leading-relaxed mb-3">
+					<strong>6.3.</strong> Bez uprzedniej pisemnej zgody Usługodawcy zabronione jest masowe pobieranie, skrapowanie, odsprzedawanie lub publiczna redystrybucja Danych Rynkowych poza zakresem dozwolonego przez prawo autorskie i umowy licencyjne.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;7 Konto Użytkownika</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>7.1.</strong> Konto może założyć osoba fizyczna, która ukończyła <strong>16 lat</strong>. Korzystając z funkcji zakładania konta potwierdzasz spełnienie tego wymogu.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.2.</strong> Rejestracja odbywa się za pomocą adresu e-mail i hasła albo przycisku „Zaloguj przez Google”; w drugim przypadku uwierzytelnienie realizuje dostawca zewnętrzny na zasadach jego regulaminów.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.3.</strong> Login i hasło (lub dostęp przez Google) są poufne. Użytkownik ponosi ryzyko związane z ujawnieniem danych logowania osobom trzecim i zobowiązuje się do niezwłocznego poinformowania Usługodawcy w razie podejrzenia naruszenia.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.4.</strong> Użytkownik może w każdej chwili usunąć Konto przy użyciu funkcji udostępnionej w interfejsie Serwisu (np. przycisk w ustawieniach konta lub równoważny mechanizm), chyba że bezwzględnie obowiązujące przepisy wymagałyby chwilowego zachowania danych.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.5.</strong> Usługodawca ma prawo zablokować lub usunąć Konto w przypadku rażącego naruszenia Regulaminu lub prawa, a&nbsp;także po upływie okresu długotrwałej nieaktywności nie krótszej niż <strong>12 miesięcy</strong>, z&nbsp;wcześniejszym wezwaniem e-mail — o ile adres e-mail Użytkownika jest dostępny.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;8 Zabronione zachowania</h2>
+				<ul class="list-disc pl-6 space-y-1 mb-3">
+					<li>automaty masowe pobierania treści („scraping”), obejścia zabezpieczeń Serwisu lub przeciążania infrastruktury,</li>
+					<li>rozpowszechnianie złośliwego oprogramowania lub treści naruszających prawo lub dobra osobiste,</li>
+					<li>podszywanie się pod inne osoby lub podmioty,</li>
+					<li>działania sprzeczne z obowiązującymi przepisami prawa polskiego lub prawa miejsca korzystania z Serwisu.</li>
+				</ul>
+				<p class="leading-relaxed mb-3">
+					<strong>8.2.</strong> W przypadku stwierdzenia naruszenia Usługodawca może zablokować lub ograniczyć dostęp do Serwisu technicznie i/lub prawnie.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;9 Własność intelektualna</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>9.1.</strong> Układ Serwisu, znaki graficzne, kod źródłowy front-endu oraz kompilacje treści edytorskich stanowią przedmiot praw autorskich lub praw pokrewnych Usługodawcy lub jego licencjodawców.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>9.2.</strong> Dozwolony jest użytek prywatny w rozumieniu przepisów o prawie autorskim w zakresie przeglądania Serwisu w przeglądarce. Zabronione jest kopiowanie całości baz danych funduszy w celach komercyjnych bez zgody.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;10 Dane osobowe i pliki cookies</h2>
+				<p class="leading-relaxed mb-3">
+					Zasady przetwarzania danych osobowych i stosowania cookies opisuje
+					<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Polityka prywatności</a>,
+					która stanowi integralną część świadczenia usług w rozumieniu ochrony danych osobowych.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;11 Ograniczenie odpowiedzialności</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>11.1.</strong> Usługodawca nie ponosi odpowiedzialności za decyzje inwestycyjne Użytkownika ani za skutki finansowe z nich wynikające.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>11.2.</strong> Usługodawca nie odpowiada za szkody wynikłe z błędów, opóźnień lub braków w Dane Rynkowych, o ile nie wynikają one z jego winy umyślnej.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>11.3.</strong> Postanowienia niniejszego paragrafu nie wyłączają ani nie ograniczają odpowiedzialności wobec konsumenta w zakresie, w jakim takie wyłączenie lub ograniczenie byłoby sprzeczne z bezwzględnie obowiązującymi przepisami prawa, w szczególności przepisami Kodeksu cywilnego i ustawy z dnia 30&nbsp;maja 2014&nbsp;r. o prawach konsumenta.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;12 Reklamacje</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>12.1.</strong> Reklamacje dotyczące działania Serwisu należy kierować na adres
+					<a href="mailto:contact@simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">contact@simpleinvesting.org</a>.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>12.2.</strong> Reklamacja powinna zawierać opis zdarzenia, datę, dane kontaktowe Użytkownika oraz — jeśli dotyczy — adres e-mail powiązany z Kontem.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>12.3.</strong> Usługodawca rozpatrzy reklamację w terminie <strong>14 dni</strong> kalendarzowych od daty jej otrzymania. W szczególnie skomplikowanych sprawach termin może zostać przedłużony o kolejne 14 dni — o czym Użytkownik zostanie poinformowany.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;13 Pozasądowe sposoby rozpatrywania reklamacji i dochodzenia roszczeń (konsument)</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>13.1.</strong> Konsument ma prawo skorzystać z pozasądowych sposobów rozpatrywania reklamacji i dochodzenia roszczeń, w tym z platformy ODR Unii Europejskiej dostępnej pod adresem
+					<a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">ec.europa.eu/consumers/odr</a>.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>13.2.</strong> Listę podmiotów uprawnionych do pozasądowego rozstrzygania sporów konsumenckich na terytorium Rzeczypospolitej Polskiej prowadzi m.in.
+					<a href="https://www.uokik.gov.pl" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Urząd Ochrony Konkurencji i Konsumentów (UOKiK)</a>.
+					Ponadto działają terenowi rzecznicy konsumentów.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;14 Czas trwania umowy, rozwiązanie i odstąpienie</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>14.1.</strong> Umowa o świadczenie usług drogą elektroniczną zawierana jest na czas nieokreślony.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>14.2.</strong> Użytkownik może w każdej chwili rozwiązać umowę poprzez zaprzestanie korzystania z Serwisu lub usunięcie Konta.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>14.3.</strong> Konsumentowi, który zawarł umowę na odległość, przysługuje prawo odstąpienia od umowy w terminie 14 dni od jej zawarcia na zasadach art.&nbsp;27 ustawy o prawach konsumenta, z zastrzeżeniem że w przypadku usług nieodpłatnych praktyczna konsekwencja odstąpienia ogranicza się do zaprzestania korzystania z Serwisu.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;15 Zmiany Regulaminu</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>15.1.</strong> Usługodawca może zmienić Regulamin z ważnych przyczyn prawnych lub technicznych.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>15.2.</strong> O istotnych zmianach poinformujemy poprzez komunikat w Serwisie lub wiadomość e-mail — co najmniej 14 dni przed wejściem zmian w życie, o ile prawo nie wymaga innego trybu.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>15.3.</strong> Aktualna wersja Regulaminu jest zawsze dostępna pod adresem
+					<a href="/terms-of-service" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">/terms-of-service</a>.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;16 Postanowienia końcowe</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>16.1.</strong> Prawem właściwym dla Regulaminu jest prawo polskie, z zastrzeżeniem bezwzględnie stosowanych przepisów ochrony konsumenta w państwie członkowskim zamieszkania konsumenta.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>16.2.</strong> Spory będą rozstrzygane przez sądy właściwe zgodnie z przepisami prawa powszechnie obowiązującego.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>16.3.</strong> Jeżeli którekolwiek postanowienie Regulaminu okaże się nieważne, pozostałe postanowienia zachowują moc (klauzula salwatoryjna).
+				</p>
+
+				<p class="text-sm text-theme-text-muted mt-10">Wersja z dnia {effectiveDate}.</p>
+			</article>
+
+			<article data-lang-content="en" class="prose-legal hidden">
+				<h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-2">Terms of Service (Electronic Services)</h1>
+				<p class="text-sm text-theme-text-muted mb-8">Effective date: {effectiveDateEn}</p>
+
+				<p class="mb-6 leading-relaxed">
+					These Terms of Service (the &ldquo;<strong>Terms</strong>&rdquo;) govern the use of the <strong>SimpleInvesting</strong> website
+					(the &ldquo;<strong>Service</strong>&rdquo;), available at
+					<a href="https://simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">simpleinvesting.org</a>.
+					The Service Provider is the entity identified in Section&nbsp;1 below.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;1 General provisions</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>1.1.</strong> The Terms are made available free of charge in a manner that allows you to access, reproduce and store them
+					(Art.&nbsp;8(1)(1) of the Polish Act of 18&nbsp;July 2002 on providing services by electronic means — &ldquo;the E-Services Act&rdquo;).
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>1.2.</strong> By using the Service you accept these Terms. When creating an Account, acceptance is express by ticking the consent box in the registration form.
+				</p>
+				<div class="rounded-xl border border-theme-border bg-theme-surface p-4 mb-3">
+					<p class="font-semibold mb-2">Service Provider</p>
+					<p class="text-sm leading-relaxed">DOCEO Mateusz Głasek</p>
+					<p class="text-sm leading-relaxed">ul. Sadowa 12, 05-430 Glina, Celestynów municipality, Otwock county, Mazovian voivodeship, Poland (EU)</p>
+					<p class="text-sm leading-relaxed">Tax ID (NIP): 5322088322, Statistical number (REGON): 385987479</p>
+					<p class="text-sm leading-relaxed">E-delivery address: AE:PL-60036-64952-UJFUG-16</p>
+					<p class="text-sm leading-relaxed">Contact: <a href="mailto:contact@simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">contact@simpleinvesting.org</a></p>
+				</div>
+				<p class="leading-relaxed mb-3">
+					<strong>1.3.</strong> These Terms do not constitute legal advice. For non-standard matters you should consult a qualified lawyer.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;2 Definitions</h2>
+				<ul class="list-disc pl-6 space-y-1 mb-3 text-sm leading-relaxed">
+					<li><strong>Service</strong> — the website and related features available under the simpleinvesting.org domain.</li>
+					<li><strong>Service Provider</strong> — the entity identified in §&nbsp;1.</li>
+					<li><strong>User</strong> — any person using the Service.</li>
+					<li><strong>Account</strong> — an individual user account created after registration.</li>
+					<li><strong>Content</strong> — texts, presentation data, layout and front-end software of the Service, excluding Market Data as licensed by third parties.</li>
+					<li><strong>ETF</strong> — an exchange-traded fund in the usual market sense; the Service presents publicly available information about such instruments.</li>
+					<li><strong>Market Data</strong> — information about financial instruments (including end-of-day prices) from external data vendors, in particular EOD Historical Data (EODHD).</li>
+					<li><strong>Privacy Policy</strong> — available at <a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">/privacy-policy</a>.</li>
+				</ul>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;3 Type and scope of services</h2>
+				<p class="leading-relaxed mb-3"><strong>3.1.</strong> Electronic services include in particular:</p>
+				<ul class="list-disc pl-6 space-y-1 mb-3">
+					<li>browsing ETF information (Account not required),</li>
+					<li>after sign-in: saving a personal watchlist and other features available in Account settings,</li>
+					<li>price charts and basic statistics based on Market Data,</li>
+					<li>contact and complaints handling pursuant to §&nbsp;12.</li>
+				</ul>
+				<p class="leading-relaxed mb-3"><strong>3.2.</strong> All features under §&nbsp;3.1 are provided <strong>free of charge</strong>.</p>
+				<p class="leading-relaxed mb-3"><strong>3.3.</strong> The Service Provider may extend or restrict features subject to §&nbsp;15.</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;4 Technical requirements</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>4.1.</strong> Use an up-to-date device and browser (Chrome, Firefox, Safari, Edge or comparable mobile browsers).
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>4.2.</strong> The Service requires <strong>JavaScript</strong> and, for authentication and preferences, cookies as described in the
+					<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Privacy Policy</a>.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>4.3.</strong> Internet connectivity costs remain with the User&rsquo;s telecom operator.</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;5 Information-only nature — no investment advice</h2>
+
+				<div class="rounded-xl border-2 border-amber-500/50 dark:border-amber-400/40 bg-amber-500/[0.08] dark:bg-amber-950/30 p-4 sm:p-5 mb-4">
+					<p class="font-bold text-theme-text mb-2">Important investment disclaimer</p>
+					<p class="text-sm leading-relaxed mb-2">
+						<strong>The Service is for information and educational purposes only.</strong> Materials presented here <strong>do not constitute an investment recommendation</strong>
+						within the meaning of Regulation (EU) No&nbsp;596/2014 on market abuse (<strong>MAR</strong>) and Commission Delegated Regulation (<strong>EU</strong>) 2016/958,
+						or <strong>investment advice</strong> within the meaning of Regulation (EU) No&nbsp;600/2014 (<strong>MIFID II</strong>) or the Polish Act of 29&nbsp;July 2005 on trading in financial instruments.
+					</p>
+					<p class="text-sm leading-relaxed mb-0">
+						Listing information about a specific fund, ticker or underlying exposure is <strong>not</strong> a recommendation to buy or sell.
+						<strong>Investing in ETFs involves a risk of loss of capital.</strong> You bear <strong>sole responsibility</strong> for your investment decisions
+						and must assess your knowledge, financial situation and risk tolerance independently.
+					</p>
+				</div>
+
+				<div class="overflow-x-auto mb-4">
+					<table class="w-full text-sm border border-theme-border rounded-lg overflow-hidden">
+						<thead class="bg-theme-surface">
+							<tr>
+								<th class="text-left p-3 border-b border-theme-border">What the Service offers</th>
+								<th class="text-left p-3 border-b border-theme-border">What the Service does <em>not</em> offer</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr class="border-b border-theme-border">
+								<td class="p-3 align-top">Aggregated presentation data, charts and browsing tools for ETFs.</td>
+								<td class="p-3 align-top">Personalised investment recommendations tailored to your financial situation.</td>
+							</tr>
+							<tr>
+								<td class="p-3 align-top">Account features to organise your own watchlist.</td>
+								<td class="p-3 align-top">Legal, tax or accounting advice, or brokerage / order execution for securities.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;6 Market Data sources and quality</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>6.1.</strong> Charts and prices may use Market Data from <strong>EOD Historical Data (EODHD)</strong> and other vendors. Licensing terms are governed by those third parties.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>6.2.</strong> Market Data may be <strong>delayed</strong> (e.g. end-of-day rather than real-time), <strong>incomplete</strong> or contain <strong>errors</strong>. It is provided &ldquo;<strong>as is</strong>&rdquo; without warranty of accuracy, timeliness or fitness for a particular purpose.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>6.3.</strong> Without prior written consent, you must not scrape, bulk-download, resell or publicly redistribute Market Data beyond what copyright and licence law allows.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;7 User Account</h2>
+				<p class="leading-relaxed mb-3"><strong>7.1.</strong> Only natural persons aged <strong>16+</strong> may create an Account.</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.2.</strong> Registration is by e-mail and password or &ldquo;Sign in with Google&rdquo;; the latter is subject to Google&rsquo;s terms.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.3.</strong> Credentials are confidential. You must notify the Service Provider promptly if you suspect unauthorised access.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.4.</strong> You may delete your Account at any time using the in-app control (e.g. account settings), unless mandatory law temporarily requires retention.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>7.5.</strong> The Service Provider may suspend or delete an Account for serious breach of these Terms or law, or after at least <strong>12 months</strong> of inactivity following an e-mail reminder where an e-mail address is available.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;8 Prohibited conduct</h2>
+				<ul class="list-disc pl-6 space-y-1 mb-3">
+					<li>automated mass scraping, bypassing security or overloading infrastructure,</li>
+					<li>malware, unlawful content or infringement of third-party rights,</li>
+					<li>impersonation,</li>
+					<li>any activity contrary to applicable law.</li>
+				</ul>
+				<p class="leading-relaxed mb-3"><strong>8.2.</strong> The Service Provider may block access technically and/or pursue legal remedies.</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;9 Intellectual property</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>9.1.</strong> Layout, branding, front-end code and editorial compilations are protected by copyright or related rights of the Service Provider or its licensors.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>9.2.</strong> Private browsing in a web browser is permitted. Commercial copying of entire fund databases is not permitted without consent.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;10 Personal data and cookies</h2>
+				<p class="leading-relaxed mb-3">
+					Personal data processing and cookies are described in the
+					<a href="/privacy-policy" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">Privacy Policy</a>.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;11 Limitation of liability</h2>
+				<p class="leading-relaxed mb-3"><strong>11.1.</strong> The Service Provider is not liable for your investment decisions or resulting financial outcomes.</p>
+				<p class="leading-relaxed mb-3"><strong>11.2.</strong> The Service Provider is not liable for damages arising from errors, delays or gaps in Market Data except in case of intentional misconduct.</p>
+				<p class="leading-relaxed mb-3">
+					<strong>11.3.</strong> Nothing in this section limits mandatory consumer protection under Polish or EU law where such limitations would be void.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;12 Complaints</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>12.1.</strong> Send complaints to
+					<a href="mailto:contact@simpleinvesting.org" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">contact@simpleinvesting.org</a>.
+				</p>
+				<p class="leading-relaxed mb-3"><strong>12.2.</strong> Include a description, date, your contact details and, if applicable, the e-mail linked to your Account.</p>
+				<p class="leading-relaxed mb-3">
+					<strong>12.3.</strong> The Service Provider will respond within <strong>14 calendar days</strong>. Complex cases may be extended by another 14 days with notice.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;13 Out-of-court dispute resolution (consumers)</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>13.1.</strong> Consumers may use the EU ODR platform:
+					<a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">ec.europa.eu/consumers/odr</a>.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>13.2.</strong> In Poland, the President of the Office of Competition and Consumer Protection (UOKiK) and regional consumer ombudsmen provide information on ADR entities:
+					<a href="https://www.uokik.gov.pl" target="_blank" rel="noopener noreferrer" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">uokik.gov.pl</a>.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;14 Duration, termination and withdrawal</h2>
+				<p class="leading-relaxed mb-3"><strong>14.1.</strong> The agreement for electronic services is concluded for an indefinite period.</p>
+				<p class="leading-relaxed mb-3"><strong>14.2.</strong> You may terminate at any time by stopping use or deleting your Account.</p>
+				<p class="leading-relaxed mb-3">
+					<strong>14.3.</strong> Where you qualify as a consumer who concluded a distance contract, you have a 14-day right of withdrawal under Art.&nbsp;27 of the Polish Consumer Rights Act; for a free service the practical effect is to cease using the Service.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;15 Changes to the Terms</h2>
+				<p class="leading-relaxed mb-3"><strong>15.1.</strong> The Service Provider may amend the Terms for material legal or technical reasons.</p>
+				<p class="leading-relaxed mb-3">
+					<strong>15.2.</strong> Material changes will be announced in the Service or by e-mail at least 14 days in advance, unless mandatory law requires otherwise.
+				</p>
+				<p class="leading-relaxed mb-3">
+					<strong>15.3.</strong> The current Terms are always available at
+					<a href="/terms-of-service" class="text-theme-primary hover:text-theme-primary-hover underline underline-offset-2">/terms-of-service</a>.
+				</p>
+
+				<h2 class="text-xl font-semibold mt-8 mb-3">§&nbsp;16 Final provisions</h2>
+				<p class="leading-relaxed mb-3">
+					<strong>16.1.</strong> Polish law applies, without prejudice to mandatory consumer protection rules of your country of residence (if you are a consumer in the EEA).
+				</p>
+				<p class="leading-relaxed mb-3"><strong>16.2.</strong> Disputes shall be resolved by courts having jurisdiction under applicable law.</p>
+				<p class="leading-relaxed mb-3"><strong>16.3.</strong> If any provision is invalid, the remainder remains in force (severability).</p>
+
+				<p class="text-sm text-theme-text-muted mt-10">Version of {effectiveDateEn}.</p>
+			</article>
 		</div>
 	</main>
 </Layout>
+
+<script is:inline>
+	(function () {
+		var stored = (typeof localStorage !== 'undefined' && localStorage.getItem('si.lang')) || 'pl';
+		var current = stored === 'en' ? 'en' : 'pl';
+
+		function apply(lang) {
+			document.querySelectorAll('[data-lang-content]').forEach(function (el) {
+				if (el.getAttribute('data-lang-content') === lang) {
+					el.classList.remove('hidden');
+				} else {
+					el.classList.add('hidden');
+				}
+			});
+			document.querySelectorAll('[data-i18n="back-home-pl"]').forEach(function (el) {
+				el.classList.toggle('hidden', lang !== 'pl');
+			});
+			document.querySelectorAll('[data-i18n="back-home-en"]').forEach(function (el) {
+				el.classList.toggle('hidden', lang !== 'en');
+			});
+			document.querySelectorAll('[data-lang-btn]').forEach(function (btn) {
+				var isActive = btn.getAttribute('data-lang-btn') === lang;
+				btn.classList.toggle('bg-theme-primary', isActive);
+				btn.classList.toggle('text-white', isActive);
+				btn.classList.toggle('bg-theme-surface', !isActive);
+				btn.classList.toggle('text-theme-text', !isActive);
+			});
+			document.documentElement.setAttribute('lang', lang);
+			try { localStorage.setItem('si.lang', lang); } catch (e) {}
+			window.dispatchEvent(new CustomEvent('si:lang-change', { detail: lang }));
+		}
+
+		document.querySelectorAll('[data-lang-btn]').forEach(function (btn) {
+			btn.addEventListener('click', function () {
+				apply(btn.getAttribute('data-lang-btn'));
+			});
+		});
+
+		apply(current);
+	})();
+</script>
