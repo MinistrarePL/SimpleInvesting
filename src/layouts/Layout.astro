@@ -1,5 +1,6 @@
 ---
 import CookieBanner from '../components/CookieBanner.astro';
+import PostHogInit from '../components/PostHogInit';
 
 interface Props {
 	title?: string;
@@ -40,6 +41,7 @@ const base = (import.meta.env.BASE_URL ?? '/').replace(/\/?$/, '/');
 		</script>
 	</head>
 	<body>
+		<PostHogInit client:only="react" />
 		<slot />
 
 		<footer class="border-t border-theme-border bg-theme-surface text-theme-text-muted text-sm">
