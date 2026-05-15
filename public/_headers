@@ -1,0 +1,26 @@
+/*
+  # --- Transport Security ---
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+
+  # --- Prevent clickjacking ---
+  X-Frame-Options: DENY
+
+  # --- Prevent MIME-type sniffing ---
+  X-Content-Type-Options: nosniff
+
+  # --- Referrer policy ---
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # --- Disable unused browser features ---
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
+
+  # --- Content Security Policy ---
+  # 'self'           — same-origin
+  # 'unsafe-inline'  — Astro/React inline scripts + styles (Tailwind v4 inject)
+  # 'unsafe-eval'    — Highcharts stockChart needs this at runtime
+  # connect-src      — Supabase (auth + DB), PostHog (EU), Cloudflare Turnstile, EODHD chart API
+  # script-src       — self + Turnstile widget + PostHog SDK + Google OAuth (accounts.google.com)
+  # img-src          — self + data URIs (Highcharts exports) + Supabase storage (avatars etc.)
+  # frame-src        — Turnstile challenge iframe + Google OAuth popup
+  # font-src         — self (Inter via @fontsource)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.posthog.com https://accounts.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co https://eu.i.posthog.com https://eu.posthog.com https://challenges.cloudflare.com https://eodhd.com https://accounts.google.com; frame-src https://challenges.cloudflare.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://*.supabase.co https://accounts.google.com; frame-ancestors 'none'; upgrade-insecure-requests
