@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MessageSquare } from 'lucide-react';
 import '../i18n/config';
 import { readAnalyticsConsent } from '../lib/analyticsConsent';
 
@@ -80,27 +81,30 @@ export default function PostHogFeedbackFab() {
       });
     });
 
+    /* `Right` → inline style `right:30px`; `.ph-survey` ma `bottom:0` → dół po prawej. Z-index PostHoga zasłania ten trigger. */
     posthog.displaySurvey(surveyId, {
       displayType: DisplaySurveyType.Popover,
       ignoreConditions: true,
       ignoreDelay: true,
-      position: SurveyPosition.NextToTrigger,
-      selector: '#si-posthog-feedback-trigger',
+      position: SurveyPosition.Right,
     });
   }, [surveyId]);
 
   if (!surveyId || !posthogKey) return null;
 
   return (
-    <div id="si-posthog-feedback-trigger" className="fixed right-0 bottom-16 z-[105] sm:bottom-24">
+    <div id="si-posthog-feedback-trigger" className="fixed right-0 bottom-16 z-[105] md:bottom-24">
       <button
         type="button"
-        className="flex min-h-[8.5rem] w-11 shrink-0 cursor-pointer items-center justify-center rounded-l-lg border border-theme-border border-r-0 bg-theme-surface py-4 text-sm font-semibold leading-tight tracking-wide text-theme-text shadow-md transition-colors hover:bg-theme-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg [text-orientation:mixed] [writing-mode:vertical-rl] sm:min-h-[9.5rem] sm:w-12"
+        className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-l-md border-y border-l border-zinc-700 border-r-0 bg-zinc-950 text-zinc-100 shadow-md transition-colors hover:bg-zinc-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 md:size-auto md:min-h-24 md:w-9 md:flex-col md:py-3 md:text-xs md:font-semibold md:leading-tight md:tracking-wide"
         onClick={() => void openSurvey()}
         aria-label={t('feedback.buttonAria')}
         title={analyticsOk ? undefined : t('feedback.needAnalyticsHint')}
       >
-        <span className="select-none">{t('feedback.button')}</span>
+        <MessageSquare className="size-[1.125rem] shrink-0 md:hidden" strokeWidth={2} aria-hidden />
+        <span className="hidden select-none md:block [text-orientation:mixed] [writing-mode:vertical-rl]">
+          {t('feedback.button')}
+        </span>
       </button>
     </div>
   );
