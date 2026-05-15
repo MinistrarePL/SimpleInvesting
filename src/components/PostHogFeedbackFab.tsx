@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare } from 'lucide-react';
 import '../i18n/config';
 import { readAnalyticsConsent } from '../lib/analyticsConsent';
 
@@ -21,6 +20,18 @@ export default function PostHogFeedbackFab() {
   const posthogKey = (import.meta.env.PUBLIC_POSTHOG_KEY as string | undefined)?.trim();
 
   const [analyticsOk, setAnalyticsOk] = useState(false);
+
+  useEffect(() => {
+    if (import.meta.env.DEV && (!posthogKey || !surveyId)) {
+      const missing = [
+        !posthogKey && 'PUBLIC_POSTHOG_KEY',
+        !surveyId && 'PUBLIC_POSTHOG_FEEDBACK_SURVEY_ID',
+      ].filter(Boolean);
+      console.info(
+        `[SimpleInvesting] Przycisk „Feedback” nie jest pokazywany — brak ${missing.join(' i ')} w .env (oba są wymagane). Po dodaniu zrestartuj npm run dev.`,
+      );
+    }
+  }, [posthogKey, surveyId]);
 
   useEffect(() => {
     setAnalyticsOk(readAnalyticsConsent());
@@ -52,7 +63,7 @@ export default function PostHogFeedbackFab() {
       window.openCookieSettings?.();
       return;
     }
-    const { default: posthog, DisplaySurveyType } = await import('posthog-js');
+    const { default: posthog, DisplaySurveyType, SurveyPosition } = await import('posthog-js');
 
     await new Promise<void>((resolve) => {
       let done = false;
@@ -73,22 +84,23 @@ export default function PostHogFeedbackFab() {
       displayType: DisplaySurveyType.Popover,
       ignoreConditions: true,
       ignoreDelay: true,
+      position: SurveyPosition.NextToTrigger,
+      selector: '#si-posthog-feedback-trigger',
     });
   }, [surveyId]);
 
   if (!surveyId || !posthogKey) return null;
 
   return (
-    <div className="fixed left-4 bottom-20 z-[105] md:left-5 md:bottom-24">
+    <div id="si-posthog-feedback-trigger" className="fixed right-0 bottom-16 z-[105] sm:bottom-24">
       <button
         type="button"
-        className="flex items-center gap-2 rounded-full border border-theme-border bg-theme-surface px-4 py-2.5 text-sm font-semibold text-theme-text shadow-lg transition-colors hover:bg-theme-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary"
+        className="flex min-h-[8.5rem] w-11 shrink-0 cursor-pointer items-center justify-center rounded-l-lg border border-theme-border border-r-0 bg-theme-surface py-4 text-sm font-semibold leading-tight tracking-wide text-theme-text shadow-md transition-colors hover:bg-theme-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary focus-visible:ring-offset-2 focus-visible:ring-offset-theme-bg [text-orientation:mixed] [writing-mode:vertical-rl] sm:min-h-[9.5rem] sm:w-12"
         onClick={() => void openSurvey()}
         aria-label={t('feedback.buttonAria')}
         title={analyticsOk ? undefined : t('feedback.needAnalyticsHint')}
       >
-        <MessageSquare className="h-5 w-5 shrink-0 text-theme-primary" aria-hidden />
-        {t('feedback.button')}
+        <span className="select-none">{t('feedback.button')}</span>
       </button>
     </div>
   );
