@@ -79,6 +79,8 @@ const resources = {
         etfList: 'Lista ETF',
         watchlist: 'Watchlista',
         aria: 'Nawigacja główna',
+        expandNav: 'Rozwiń panel nawigacji',
+        collapseNav: 'Zwiń panel nawigacji',
       },
       watchlist: {
         title: 'Watchlista',
@@ -368,6 +370,8 @@ const resources = {
         etfList: 'ETF list',
         watchlist: 'Watchlist',
         aria: 'Main navigation',
+        expandNav: 'Expand navigation panel',
+        collapseNav: 'Collapse navigation panel',
       },
       watchlist: {
         title: 'Watchlist',

@@ -5,9 +5,9 @@
  * - `renderInvisibleTurnstile(container, siteKey)` montuje widget i zwraca id.
  * - `executeTurnstile(widgetId)` zwraca Promise z tokenem (wywoływane przy submit).
  *
- * Bez `PUBLIC_TURNSTILE_SITE_KEY` (np. dev) `renderInvisibleTurnstile`
- * zwraca `null` i logowanie działa bez captcha (Supabase wymusi ją dopiero,
- * gdy włączysz Turnstile w panelu Auth → Bot and Abuse Protection).
+ * Bez `PUBLIC_TURNSTILE_SITE_KEY` żądania auth nie wysyłają tokenu — jeśli w Supabase
+ * włączona jest ochrona (Bot and Abuse Protection), logowanie się nie powiedzie
+ * (komunikat „no captcha_token”). Ustaw klucz także na localhost.
  */
 
 interface TurnstileRenderOptions {
@@ -82,19 +82,41 @@ export function loadTurnstile(): Promise<TurnstileApi | null> {
 
 export async function renderInvisibleTurnstile(container: HTMLElement, siteKey: string): Promise<string | null> {
   const ts = await loadTurnstile();
-  if (!ts || !container) return null;
+  if (!ts) {
+    if (import.meta.env.DEV) console.warn('[turnstile] script failed to load');
+    return null;
+  }
+  if (!container) {
+    if (import.meta.env.DEV) console.warn('[turnstile] container missing');
+    return null;
+  }
   try {
-    return ts.render(container, {
+    const id = ts.render(container, {
       sitekey: siteKey,
       size: 'invisible',
-      appearance: 'interaction-only',
+      appearance: 'execute',
       retry: 'auto',
-      callback: (token: string) => settlePending(token),
-      'error-callback': () => settlePending(null),
-      'timeout-callback': () => settlePending(null),
-      'expired-callback': () => settlePending(null),
+      callback: (token: string) => {
+        if (import.meta.env.DEV) console.log('[turnstile] token received', token.slice(0, 20) + '…');
+        settlePending(token);
+      },
+      'error-callback': () => {
+        if (import.meta.env.DEV) console.warn('[turnstile] error-callback fired');
+        settlePending(null);
+      },
+      'timeout-callback': () => {
+        if (import.meta.env.DEV) console.warn('[turnstile] timeout-callback fired');
+        settlePending(null);
+      },
+      'expired-callback': () => {
+        if (import.meta.env.DEV) console.warn('[turnstile] expired-callback fired');
+        settlePending(null);
+      },
     });
-  } catch {
+    if (import.meta.env.DEV) console.log('[turnstile] widget rendered, id:', id);
+    return id;
+  } catch (e) {
+    if (import.meta.env.DEV) console.error('[turnstile] render failed:', e);
     return null;
   }
 }

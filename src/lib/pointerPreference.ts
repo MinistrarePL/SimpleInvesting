@@ -1,15 +1,10 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-/** Tooltipi hover w portalu tylko na desktopie — na touch są problematyczne (zacinają się). */
+/** Tooltipi hover w portalu tylko na desktopie — na touch są problematyczne (zacinają się). Startujemy od `false`, żeby SSR === pierwszy render klienta (brak hydration mismatch). */
 export function useShowHoverPortalTooltips(): boolean {
-  const [ok, setOk] = useState(() =>
-    typeof window !== 'undefined' &&
-    window.matchMedia('(min-width: 768px)').matches &&
-    window.matchMedia('(hover: hover)').matches &&
-    window.matchMedia('(pointer: fine)').matches,
-  );
+  const [ok, setOk] = useState(false);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const mqW = window.matchMedia('(min-width: 768px)');
     const mqHover = window.matchMedia('(hover: hover)');
     const mqFine = window.matchMedia('(pointer: fine)');
@@ -30,13 +25,11 @@ export function useShowHoverPortalTooltips(): boolean {
   return ok;
 }
 
-/** Tailwind `md` — przy max-width&lt;768px uproszczamy UI (bez hover-portali itd.). */
+/** Tailwind `md` — przy max-width<768px uproszczamy UI (bez hover-portali itd.). Startujemy od `false` dla spójności z SSR. */
 export function useIsMdBreakpointUp(): boolean {
-  const [up, setUp] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)').matches : false,
-  );
+  const [up, setUp] = useState(false);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
     const sync = () => setUp(mq.matches);
     sync();

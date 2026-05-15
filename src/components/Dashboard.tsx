@@ -234,6 +234,8 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const [authView, setAuthView] = useState<'login' | 'register' | 'reset' | 'update_password'>('login');
 
   const [activeView, setActiveView] = useState<'etf-list' | 'watchlist'>('etf-list');
+  /** Lewy sidebar (desktop): domyślnie zwinięty — tylko ikony + tooltips. */
+  const [navSidebarExpanded, setNavSidebarExpanded] = useState(false);
   const [watchlistIds, setWatchlistIds] = useState<Set<string>>(() => new Set());
   const [wlPageIndex, setWlPageIndex] = useState(0);
   const [wlPageSize, setWlPageSize] = useState<PageSizeOption>(100);
@@ -922,38 +924,91 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       <div className="flex flex-1 min-h-0 w-full max-w-[1920px] mx-auto">
         {session && (
           <aside
-            className="hidden md:flex w-52 shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] border-r border-theme-border bg-theme-surface flex-col gap-1 py-6 px-3"
+            className={`hidden md:flex shrink-0 sticky top-16 self-start h-[calc(100vh-4rem)] border-r border-theme-border bg-theme-surface flex-col gap-1 py-4 transition-[width] duration-200 ease-out ${
+              navSidebarExpanded ? 'w-52 px-3' : 'w-14 px-2'
+            }`}
             aria-label={t('nav.aria')}
           >
-            <button
-              type="button"
-              onClick={() => setActiveView('etf-list')}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors ${
-                activeView === 'etf-list'
-                  ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
-                  : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
-              }`}
+            <HoverTooltip
+              tooltip={navSidebarExpanded ? t('nav.collapseNav') : t('nav.expandNav')}
+              className="flex w-full"
             >
-              <LayoutList className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
-              <span>{t('nav.etfList')}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView('watchlist')}
-              className={`relative flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors ${
-                activeView === 'watchlist'
-                  ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
-                  : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
-              }`}
-            >
-              <Eye className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
-              <span className="flex-1 min-w-0">{t('nav.watchlist')}</span>
-              {watchlistIds.size > 0 && (
-                <span className="tabular-nums rounded-full bg-theme-bg px-2 py-0.5 text-xs text-theme-text-muted shrink-0">
-                  {watchlistIds.size > 999 ? '999+' : watchlistIds.size}
-                </span>
-              )}
-            </button>
+              <button
+                type="button"
+                onClick={() => setNavSidebarExpanded((x) => !x)}
+                className="flex w-full items-center justify-center rounded-lg px-0 py-2.5 text-theme-text-muted transition-colors hover:bg-theme-bg hover:text-theme-text"
+                aria-expanded={navSidebarExpanded}
+                aria-label={navSidebarExpanded ? t('nav.collapseNav') : t('nav.expandNav')}
+              >
+                {navSidebarExpanded ? (
+                  <ChevronLeft className="w-5 h-5 shrink-0" aria-hidden />
+                ) : (
+                  <ChevronRight className="w-5 h-5 shrink-0" aria-hidden />
+                )}
+              </button>
+            </HoverTooltip>
+
+            {(() => {
+              const etfListBtn = (
+                <button
+                  type="button"
+                  onClick={() => setActiveView('etf-list')}
+                  className={`flex w-full items-center rounded-lg py-3 text-sm font-medium transition-colors ${
+                    navSidebarExpanded ? 'gap-3 px-3 text-left' : 'justify-center px-2'
+                  } ${
+                    activeView === 'etf-list'
+                      ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                      : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+                  }`}
+                  aria-current={activeView === 'etf-list' ? 'page' : undefined}
+                >
+                  <LayoutList className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
+                  {navSidebarExpanded ? <span>{t('nav.etfList')}</span> : null}
+                </button>
+              );
+              const watchlistBtn = (
+                <button
+                  type="button"
+                  onClick={() => setActiveView('watchlist')}
+                  className={`relative flex w-full items-center rounded-lg py-3 text-sm font-medium transition-colors ${
+                    navSidebarExpanded ? 'gap-3 px-3 text-left' : 'justify-center px-2'
+                  } ${
+                    activeView === 'watchlist'
+                      ? 'bg-teal-600/15 text-teal-800 dark:text-teal-300'
+                      : 'text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+                  }`}
+                  aria-current={activeView === 'watchlist' ? 'page' : undefined}
+                >
+                  <Eye className="w-5 h-5 shrink-0 text-theme-primary" aria-hidden />
+                  {navSidebarExpanded ? (
+                    <>
+                      <span className="flex-1 min-w-0">{t('nav.watchlist')}</span>
+                      {watchlistIds.size > 0 ? (
+                        <span className="tabular-nums rounded-full bg-theme-bg px-2 py-0.5 text-xs text-theme-text-muted shrink-0">
+                          {watchlistIds.size > 999 ? '999+' : watchlistIds.size}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : watchlistIds.size > 0 ? (
+                    <span className="absolute right-1.5 top-1.5 min-w-[18px] h-[18px] px-0.5 flex items-center justify-center rounded-full bg-teal-600 text-[10px] font-bold leading-none text-white">
+                      {watchlistIds.size > 99 ? '99+' : watchlistIds.size}
+                    </span>
+                  ) : null}
+                </button>
+              );
+              return (
+                <>
+                  {navSidebarExpanded ? etfListBtn : <HoverTooltip tooltip={t('nav.etfList')} className="flex w-full min-w-0">{etfListBtn}</HoverTooltip>}
+                  {navSidebarExpanded ? (
+                    watchlistBtn
+                  ) : (
+                    <HoverTooltip tooltip={t('nav.watchlist')} className="flex w-full min-w-0">
+                      {watchlistBtn}
+                    </HoverTooltip>
+                  )}
+                </>
+              );
+            })()}
           </aside>
         )}
 
