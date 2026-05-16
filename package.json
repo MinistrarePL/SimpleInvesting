@@ -21,31 +21,31 @@
     "extract:knowledge": "tsx scripts/extract-knowledge-base.ts"
   },
   "dependencies": {
-    "@astrojs/netlify": "^7.0.8",
-    "@astrojs/node": "^10.1.0",
-    "@astrojs/react": "^5.0.4",
+    "@astrojs/netlify": "^7.0.9",
+    "@astrojs/node": "^10.1.1",
+    "@astrojs/react": "^5.0.5",
     "@fontsource/inter": "^5.2.8",
-    "@supabase/supabase-js": "^2.105.3",
-    "@tailwindcss/vite": "^4.2.4",
+    "@supabase/supabase-js": "^2.105.4",
+    "@tailwindcss/vite": "^4.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "astro": "^6.3.0",
+    "astro": "^6.3.3",
     "dotenv": "^17.4.2",
     "highcharts": "^12.6.0",
     "highcharts-react-official": "^3.2.3",
-    "i18next": "^26.0.10",
-    "lucide-react": "^1.14.0",
+    "i18next": "^26.2.0",
+    "lucide-react": "^1.16.0",
     "openai": "^6.38.0",
-    "posthog-js": "^1.373.4",
+    "posthog-js": "^1.373.5",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-i18next": "^17.0.7",
+    "react-i18next": "^17.0.8",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@astrojs/sitemap": "^3.7.2",
     "pdfjs-dist": "^5.7.284",
-    "tsx": "^4.21.0"
+    "tsx": "^4.22.0"
   }
 }
