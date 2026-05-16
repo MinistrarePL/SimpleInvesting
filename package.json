@@ -35,6 +35,7 @@
     "highcharts-react-official": "^3.2.3",
     "i18next": "^26.0.10",
     "lucide-react": "^1.14.0",
+    "openai": "^6.38.0",
     "posthog-js": "^1.373.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

@@ -6,6 +6,8 @@ import {
   Sun,
   Globe,
   Search,
+  Sparkles,
+  Loader2,
   User,
   ChevronUp,
   ChevronDown,
@@ -214,8 +216,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
   const gridDensity: GridDensity = !isMdUp ? 'compact' : (gridDensityOverride ?? viewportGridDensity);
   const [etfs, setEtfs] = useState<EtfRow[]>(initialEtfs);
 
-  // Stan dla wyszukiwarki (filtrowanie tabeli)
+  // Stan dla wyszukiwarki (filtrowanie tabeli) + AI search
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiSearchActive, setAiSearchActive] = useState(false);
+  const [aiPhase, setAiPhase] = useState<
+    'idle' | 'loading' | 'ok' | 'no_match' | 'off_topic' | 'error'
+  >('idle');
+  const [aiSortedIds, setAiSortedIds] = useState<string[] | null>(null);
+  const [aiBannerDetail, setAiBannerDetail] = useState('');
 
   // Stan sortowania tabeli
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
@@ -380,54 +388,160 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
 
   const watchlistContains = useCallback((etfId: string) => watchlistIds.has(etfId), [watchlistIds]);
 
+  const submitAiSearch = useCallback(async () => {
+    if (!aiSearchActive) return;
+    const q = searchQuery.trim();
+    if (!q) {
+      setAiPhase('idle');
+      setAiSortedIds(null);
+      setAiBannerDetail('');
+      return;
+    }
+    setAiPhase('loading');
+    setAiBannerDetail('');
+    const localeIso = i18n.language?.startsWith('pl') ? 'pl' : 'en';
+    try {
+      const res = await fetch('/api/ai-search-etfs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: q, locale: localeIso }),
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        intent?: string;
+        ids?: string[];
+        messagePl?: string;
+        messageEn?: string;
+        code?: string;
+      };
+
+      if (!res.ok || json.ok !== true) {
+        const hint =
+          json.code === 'MISSING_OPENAI_KEY'
+            ? t('search.aiErrorKeys.MISSING_OPENAI_KEY')
+            : json.code === 'SUPABASE_SERVER_MISCONFIGURED'
+              ? t('search.aiErrorKeys.SUPABASE_SERVER_MISCONFIGURED')
+              : t('search.aiErrorKeys.AI_SEARCH_FAILED');
+        setAiPhase('error');
+        setAiSortedIds(null);
+        setAiBannerDetail(`${t('search.aiBannerError')} ${hint}`);
+        return;
+      }
+
+      const note =
+        localeIso === 'pl'
+          ? json.messagePl || json.messageEn || ''
+          : json.messageEn || json.messagePl || '';
+
+      if (json.intent === 'ok' && json.ids && json.ids.length > 0) {
+        setAiPhase('ok');
+        setAiSortedIds(json.ids);
+        setAiBannerDetail(note.trim());
+      } else if (json.intent === 'no_match') {
+        setAiPhase('no_match');
+        setAiSortedIds([]);
+        setAiBannerDetail(note.trim());
+      } else if (json.intent === 'off_topic') {
+        setAiPhase('off_topic');
+        setAiSortedIds(null);
+        setAiBannerDetail(note.trim());
+      } else {
+        setAiPhase('error');
+        setAiSortedIds(null);
+        setAiBannerDetail(t('search.aiBannerError'));
+      }
+      setPageIndex(0);
+    } catch {
+      setAiPhase('error');
+      setAiSortedIds(null);
+      setAiBannerDetail(t('search.aiBannerError'));
+    }
+  }, [aiSearchActive, searchQuery, i18n.language, t]);
+
   // Filtrowanie ETF-ów na podstawie wpisanego tekstu + zaawansowanych filtrów
   const filteredEtfs = useMemo(() => {
+    const sortRows = (rows: EtfRow[]): EtfRow[] => {
+      if (!sortKey) return rows;
+      return [...rows].sort((a, b) => {
+        let valA: string | number | null;
+        let valB: string | number | null;
+
+        if (sortKey === 'ticker') {
+          valA = a.ticker.toLowerCase();
+          valB = b.ticker.toLowerCase();
+        } else if (sortKey === 'category') {
+          valA = (a.category || '').toLowerCase();
+          valB = (b.category || '').toLowerCase();
+        } else if (sortKey === 'currency') {
+          valA = (a.currency || '').toLowerCase();
+          valB = (b.currency || '').toLowerCase();
+        } else if (sortKey === 'sentiment') {
+          valA = toFiniteNumber(a.sentiment_normalized);
+          valB = toFiniteNumber(b.sentiment_normalized);
+        } else {
+          valA = a[sortKey] as number | null;
+          valB = b[sortKey] as number | null;
+        }
+
+        if (valA == null && valB == null) return 0;
+        if (valA == null) return 1;
+        if (valB == null) return -1;
+
+        let cmp: number;
+        if (typeof valA === 'string' && typeof valB === 'string') {
+          cmp = valA.localeCompare(valB);
+        } else {
+          cmp = (valA as number) - (valB as number);
+        }
+
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    };
+
+    const filteredBase = applyFilters(etfs, filters);
+
+    if (aiSearchActive) {
+      if (aiPhase === 'no_match') {
+        return sortRows([]);
+      }
+      if (
+        aiPhase === 'ok' &&
+        aiSortedIds &&
+        aiSortedIds.length > 0
+      ) {
+        const byId = new Map(filteredBase.map((e) => [e.id, e] as const));
+        const picked: EtfRow[] = [];
+        for (const id of aiSortedIds) {
+          const row = byId.get(id);
+          if (row) picked.push(row);
+        }
+        return sortRows(picked);
+      }
+      if (aiPhase === 'ok') {
+        return sortRows([]);
+      }
+      return sortRows(filteredBase);
+    }
+
     const query = searchQuery.toLowerCase();
-    const text = etfs.filter((etf) =>
-      etf.ticker.toLowerCase().includes(query) ||
-      etf.name.toLowerCase().includes(query) ||
-      (etf.category && etf.category.toLowerCase().includes(query)) ||
-      (etf.currency && etf.currency.toLowerCase().includes(query))
+    const text = filteredBase.filter(
+      (etf) =>
+        etf.ticker.toLowerCase().includes(query) ||
+        etf.name.toLowerCase().includes(query) ||
+        (etf.category && etf.category.toLowerCase().includes(query)) ||
+        (etf.currency && etf.currency.toLowerCase().includes(query)),
     );
-    const filtered = applyFilters(text, filters);
-
-    if (!sortKey) return filtered;
-
-    return [...filtered].sort((a, b) => {
-      let valA: string | number | null;
-      let valB: string | number | null;
-
-      if (sortKey === 'ticker') {
-        valA = a.ticker.toLowerCase();
-        valB = b.ticker.toLowerCase();
-      } else if (sortKey === 'category') {
-        valA = (a.category || '').toLowerCase();
-        valB = (b.category || '').toLowerCase();
-      } else if (sortKey === 'currency') {
-        valA = (a.currency || '').toLowerCase();
-        valB = (b.currency || '').toLowerCase();
-      } else if (sortKey === 'sentiment') {
-        valA = toFiniteNumber(a.sentiment_normalized);
-        valB = toFiniteNumber(b.sentiment_normalized);
-      } else {
-        valA = a[sortKey] as number | null;
-        valB = b[sortKey] as number | null;
-      }
-
-      if (valA == null && valB == null) return 0;
-      if (valA == null) return 1;
-      if (valB == null) return -1;
-
-      let cmp: number;
-      if (typeof valA === 'string' && typeof valB === 'string') {
-        cmp = valA.localeCompare(valB);
-      } else {
-        cmp = (valA as number) - (valB as number);
-      }
-
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-  }, [etfs, searchQuery, sortKey, sortDir, filters]);
+    return sortRows(text);
+  }, [
+    etfs,
+    searchQuery,
+    sortKey,
+    sortDir,
+    filters,
+    aiSearchActive,
+    aiPhase,
+    aiSortedIds,
+  ]);
 
   const filteredCount = filteredEtfs.length;
 
@@ -1060,56 +1174,108 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
           <>
         
         {/* Wyszukiwarka + Filtry */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-3 sm:items-stretch">
-          <div className="relative min-w-0 flex-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-theme-text-muted" />
-            </div>
-            <input
-              type="text"
-              className={`block w-full pl-10 py-3 border border-theme-border rounded-xl leading-5 bg-theme-surface text-theme-text placeholder-theme-text-muted focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-theme-primary sm:text-sm transition-colors ${searchQuery ? 'pr-10' : 'pr-3'}`}
-              placeholder={t('search.placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery !== '' && (
-              <HoverTooltip tooltip={t('search.clear')} className="absolute inset-y-0 right-0 flex items-center">
-                <button
-                  type="button"
-                  className="flex h-full items-center pr-3 text-theme-text-muted hover:text-theme-text rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary"
-                  onClick={() => setSearchQuery('')}
-                  aria-label={t('search.clear')}
-                >
-                  <X className="h-5 w-5 shrink-0" aria-hidden />
-                </button>
-              </HoverTooltip>
-            )}
-          </div>
-          <div className="flex w-full justify-end sm:contents">
-            <HoverTooltip
-              tooltip={session ? t('filters.title') : t('filters.requireAccountForFilters')}
-              className="shrink-0 inline-flex"
-            >
+        <div className="mb-6 flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-stretch">
+            <div className="flex min-w-0 flex-1 rounded-xl border border-theme-border bg-theme-surface shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-theme-primary transition-shadow">
               <button
                 type="button"
+                aria-pressed={aiSearchActive}
                 onClick={() => {
-                  if (session) {
-                    setIsFiltersOpen(true);
-                  } else {
-                    setAuthView('login');
-                    setAuthHeaderNotice(t('filters.requireAccountForFilters'));
-                    setIsAuthModalOpen(true);
+                  const next = !aiSearchActive;
+                  setAiSearchActive(next);
+                  setAiPhase('idle');
+                  setAiSortedIds(null);
+                  setAiBannerDetail('');
+                  if (!next) {
+                    /* nic */
                   }
                 }}
-                className="btn-primary shrink-0"
-                aria-haspopup="dialog"
-                aria-expanded={isFiltersOpen}
+                className={`shrink-0 border-r border-theme-border px-3 py-3 text-[11px] sm:text-xs font-semibold uppercase tracking-wide transition-colors ${
+                  aiSearchActive
+                    ? 'bg-teal-600/15 text-teal-700 dark:text-teal-300'
+                    : 'bg-theme-bg/60 text-theme-text-muted hover:bg-theme-bg hover:text-theme-text'
+                }`}
               >
-                <SlidersHorizontal className="w-4 h-4" />
-                <span>{t('filters.openBtn')}</span>
+                {t('search.aiToggle')}
               </button>
-            </HoverTooltip>
+              <div className="relative flex-1 min-w-0">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  {aiPhase === 'loading' ? (
+                    <Loader2 className="h-5 w-5 text-theme-primary animate-spin" aria-hidden />
+                  ) : aiSearchActive ? (
+                    <Sparkles className="h-5 w-5 text-theme-primary" aria-hidden />
+                  ) : (
+                    <Search className="h-5 w-5 text-theme-text-muted" aria-hidden />
+                  )}
+                </div>
+                <input
+                  type="text"
+                  aria-busy={aiSearchActive && aiPhase === 'loading'}
+                  className={`block w-full pl-10 py-3 leading-5 bg-transparent text-theme-text placeholder-theme-text-muted focus:outline-none sm:text-sm transition-colors ${searchQuery ? 'pr-10' : 'pr-3'}`}
+                  placeholder={
+                    aiSearchActive ? t('search.aiPlaceholderExample') : t('search.placeholder')
+                  }
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (aiSearchActive && e.key === 'Enter') {
+                      e.preventDefault();
+                      if (aiPhase !== 'loading') void submitAiSearch();
+                    }
+                  }}
+                />
+                {searchQuery !== '' && aiPhase !== 'loading' && (
+                  <HoverTooltip tooltip={t('search.clear')} className="absolute inset-y-0 right-0 flex items-center">
+                    <button
+                      type="button"
+                      className="flex h-full items-center pr-3 text-theme-text-muted hover:text-theme-text focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-primary rounded-lg"
+                      onClick={() => {
+                        setSearchQuery('');
+                        if (aiSearchActive) {
+                          setAiPhase('idle');
+                          setAiSortedIds(null);
+                          setAiBannerDetail('');
+                        }
+                      }}
+                      aria-label={t('search.clear')}
+                    >
+                      <X className="h-5 w-5 shrink-0" aria-hidden />
+                    </button>
+                  </HoverTooltip>
+                )}
+              </div>
+            </div>
+            <div className="flex w-full justify-end sm:contents">
+              <HoverTooltip
+                tooltip={session ? t('filters.title') : t('filters.requireAccountForFilters')}
+                className="shrink-0 inline-flex"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (session) {
+                      setIsFiltersOpen(true);
+                    } else {
+                      setAuthView('login');
+                      setAuthHeaderNotice(t('filters.requireAccountForFilters'));
+                      setIsAuthModalOpen(true);
+                    }
+                  }}
+                  className="btn-primary shrink-0"
+                  aria-haspopup="dialog"
+                  aria-expanded={isFiltersOpen}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  <span>{t('filters.openBtn')}</span>
+                </button>
+              </HoverTooltip>
+            </div>
           </div>
+          {aiSearchActive && (
+            <p className="text-xs text-theme-text-muted pl-1">
+              {t('search.aiHintEnter')}
+            </p>
+          )}
         </div>
 
         {activeFilterChips.length > 0 && (
@@ -1133,6 +1299,40 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {aiSearchActive &&
+          aiPhase !== 'idle' &&
+          (aiPhase !== 'ok' || aiBannerDetail.trim() !== '') && (
+          <div
+            role="status"
+            className={`mb-4 rounded-lg border px-3 py-2.5 text-sm ${
+              aiPhase === 'error'
+                ? 'border-red-500/35 bg-red-500/[0.06] text-theme-text'
+                : aiPhase === 'loading'
+                  ? 'border-theme-border bg-theme-bg text-theme-text-muted'
+                  : 'border-teal-600/35 bg-teal-600/[0.07] text-theme-text'
+            }`}
+          >
+            {aiPhase === 'loading' ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-theme-primary shrink-0" aria-hidden />
+                {t('search.aiSearching')}
+              </span>
+            ) : aiPhase === 'error' ? (
+              <span>{aiBannerDetail.trim() || t('search.aiBannerError')}</span>
+            ) : aiPhase === 'off_topic' ? (
+              <span>
+                {aiBannerDetail.trim() ? aiBannerDetail : t('search.aiBannerOffTopic')}
+              </span>
+            ) : aiPhase === 'no_match' ? (
+              <span>
+                {aiBannerDetail.trim() ? aiBannerDetail : t('search.aiBannerNoMatch')}
+              </span>
+            ) : (
+              <span>{aiBannerDetail}</span>
+            )}
           </div>
         )}
 

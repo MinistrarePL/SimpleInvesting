@@ -82,6 +82,23 @@ const resources = {
       search: {
         placeholder: 'Szukaj w tabeli',
         clear: 'Wyczyść wyszukiwanie',
+        aiToggle: 'AI search',
+        aiHintEnter: 'Naciśnij Enter, żeby wyszukać z AI.',
+        aiSearching: 'Szukamy dopasowanych ETF…',
+        aiPlaceholderExample:
+          'Po prostu powiedz, jakich ETF szukasz. Np. podaj mi listę bezpiecznych ETF inwestujących w surowce.',
+        aiBannerOffTopic:
+          'Tu pomagamy tylko w wyszukiwaniu funduszy ETF z naszej bazy — spróbuj opisać typ funduszu, region lub tematykę.',
+        aiBannerNoMatch:
+          'Żaden fundusz z dostępnej listy nie pasuje – doprecyzuj kryteria albo zmień sformułowanie.',
+        aiBannerError:
+          'Nie udało się wykonać wyszukiwania AI. Sprawdź ustawienia serwera lub spróbuj ponownie.',
+        aiErrorKeys: {
+          MISSING_OPENAI_KEY:
+            'Szczegół: brak klucza OpenAI (ustaw OPENAI_API_KEY lub OPENAI_API_KEY_SM w .env / Netlify).',
+          SUPABASE_SERVER_MISCONFIGURED: 'Szczegół: niepoprawny Supabase dla trybu SSR.',
+          AI_SEARCH_FAILED: 'Szczegół: komunikat zewnętrznego API.',
+        },
       },
       nav: {
         etfList: 'Lista ETF',
@@ -394,6 +411,22 @@ const resources = {
       search: {
         placeholder: 'Search the table',
         clear: 'Clear search',
+        aiToggle: 'AI search',
+        aiHintEnter: 'Press Enter to run AI search.',
+        aiSearching: 'Searching for matching ETFs…',
+        aiPlaceholderExample:
+          'Just describe which ETFs you want. Example: show me ETFs that track commodities with modest risk.',
+        aiBannerOffTopic:
+          'We only help search ETFs in our database — describe a theme, asset class or region.',
+        aiBannerNoMatch:
+          'Nothing in the current ETF list matched – try narrower or different wording.',
+        aiBannerError: 'AI search failed. Try again or check server configuration.',
+        aiErrorKeys: {
+          MISSING_OPENAI_KEY:
+            'Details: no OpenAI API key (set OPENAI_API_KEY or OPENAI_API_KEY_SM in .env / Netlify).',
+          SUPABASE_SERVER_MISCONFIGURED: 'Details: Supabase SSR misconfigured.',
+          AI_SEARCH_FAILED: 'Details: external AI error.',
+        },
       },
       nav: {
         etfList: 'ETF list',
