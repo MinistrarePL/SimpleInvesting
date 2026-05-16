@@ -1,5 +1,6 @@
 # ETF data refresh against Supabase + EODHD
-# Schedules: daily return updates (Mon-Fri after US market close), monthly fundamentals + returns.
+# Schedules: daily return updates (Mon-Fri after US market close), monthly fundamentals + returns,
+# plus EODHD sentiment at most once per day with those jobs.
 # Manual: optional discover (rebuilds data/etf-universe.json on the runner) then seeds.
 #
 # Repo secrets: EODHD_API_KEY, PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -20,6 +21,10 @@ on:
         description: Run seed:fundamentals (after discover if selected)
         type: boolean
         default: false
+      run_sentiment:
+        description: Run seed:sentiment after prices (EODHD; use sparingly)
+        type: boolean
+        default: true
 
 jobs:
   refresh:
@@ -53,6 +58,7 @@ jobs:
           if [ "$EVENT" = "workflow_dispatch" ]; then
             DISC="${{ inputs.run_discover }}"
             FUND="${{ inputs.run_fundamentals }}"
+            SENT="${{ inputs.run_sentiment }}"
             if [ "$DISC" = "true" ]; then
               npm run discover:etfs
             fi
@@ -62,6 +68,9 @@ jobs:
               npm run cleanup:empty
             fi
             npm run seed:prices
+            if [ "$SENT" = "true" ]; then
+              npm run seed:sentiment
+            fi
             exit 0
           fi
 
@@ -70,14 +79,16 @@ jobs:
           DOW=$(date -u +%u)
 
           if [ "$DAY" = "1" ] && [ "$HOUR" = "02" ]; then
-            echo "Monthly run: fundamentals + prune + prices"
+            echo "Monthly run: fundamentals + prune + prices + sentiment"
             npm run seed:fundamentals
             npm run prune:etfs
             npm run cleanup:empty
             npm run seed:prices
+            npm run seed:sentiment
           elif [ "$HOUR" = "22" ] && [ "$DOW" -ge 1 ] && [ "$DOW" -le 5 ]; then
-            echo "Daily run (Mon-Fri): prices only"
+            echo "Daily run (Mon-Fri): prices + sentiment"
             npm run seed:prices
+            npm run seed:sentiment
           else
             echo "Schedule fired outside expected window (day=$DAY hour=$HOUR dow=$DOW); skipping."
           fi

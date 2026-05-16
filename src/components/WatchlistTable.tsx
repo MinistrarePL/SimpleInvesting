@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import { classifyAum, classifyCost } from '../lib/etfFilters';
+import { getSentimentTone } from '../lib/sentimentLabel';
+import { toFiniteInt, toFiniteNumber } from '../utils/coerceNumeric';
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const;
 export type PageSizeOptionWatch = (typeof PAGE_SIZE_OPTIONS)[number];
@@ -107,6 +109,28 @@ export default function WatchlistTable({
     return <span className="text-amber-500 tracking-tight">{'★'.repeat(rating)}</span>;
   };
 
+  const renderSentiment = (etf: EtfRow) => {
+    const v = toFiniteNumber(etf.sentiment_normalized);
+    if (v == null) {
+      return <span className="text-theme-text-muted">—</span>;
+    }
+    const tone = getSentimentTone(v);
+    const colorClass =
+      tone === 'positive' ? 'text-theme-return-pos' : tone === 'negative' ? 'text-theme-return-neg' : 'text-theme-text';
+    const label = t(`table.sentimentTone.${tone}`);
+    const parts: string[] = [
+      t('table.sentimentTooltipScore', { score: (v > 0 ? '+' : '') + v.toFixed(2) }),
+    ];
+    if (etf.sentiment_date) parts.push(etf.sentiment_date);
+    const art = toFiniteInt(etf.sentiment_article_count);
+    if (art != null) parts.push(t('table.sentimentArticles', { count: art }));
+    return (
+      <span className={`font-medium ${colorClass}`} title={parts.join(' · ')}>
+        {label}
+      </span>
+    );
+  };
+
   const totalPages = totalCount === 0 ? 1 : Math.ceil(totalCount / pageSize);
   const safePage = Math.min(pageIndex, Math.max(0, totalPages - 1));
   const rangeFrom = totalCount === 0 ? 0 : safePage * pageSize + 1;
@@ -123,7 +147,7 @@ export default function WatchlistTable({
   return (
     <div className="bg-theme-surface rounded-xl shadow-sm border border-theme-border overflow-hidden">
       <div className="overflow-x-auto scrollbar-x-hide table-h-scroll-touch">
-        <table className="w-full text-left border-collapse min-w-[1100px]">
+        <table className="w-full text-left border-collapse min-w-[1180px]">
           <thead>
             <tr className="border-b border-theme-border">
               <th className={`bg-theme-surface font-semibold text-theme-text-muted uppercase whitespace-nowrap ${gx.thWide} shadow-[0_1px_0_0_var(--color-theme-border)]`}>
@@ -151,6 +175,11 @@ export default function WatchlistTable({
                 className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right ${gx.thWide}`}
               >
                 {t('table.y1')}
+              </th>
+              <th
+                className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right ${gx.thWide}`}
+              >
+                {t('table.sentiment')}
               </th>
               <th className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap ${gx.thNarrow}`}>
                 {t('table.currency')}
@@ -202,6 +231,7 @@ export default function WatchlistTable({
                 <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1m)}</td>
                 <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1q)}</td>
                 <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1y)}</td>
+                <td className={`${gx.tdWide} text-right`}>{renderSentiment(etf)}</td>
                 <td className={gx.tdCurrency}>{etf.currency || '—'}</td>
                 <td className={gx.tdAumTer} title={etf.total_assets != null ? String(etf.total_assets) : undefined}>
                   {(() => {

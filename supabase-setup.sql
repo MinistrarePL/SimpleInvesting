@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS public.etfs (
     return_1m NUMERIC(10, 2),
     return_1q NUMERIC(10, 2),
     return_1y NUMERIC(10, 2),
+    sentiment_normalized DOUBLE PRECISION,
+    sentiment_article_count INTEGER,
+    sentiment_date DATE,
+    sentiment_history JSONB,
     last_updated TIMESTAMPTZ DEFAULT NOW(),
     fundamentals_updated TIMESTAMPTZ,
     CONSTRAINT etfs_ticker_exchange_key UNIQUE (ticker, exchange)

@@ -1,6 +1,7 @@
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from './categoryMap';
 import { inferEtfTheme, localizedThemeCanon } from './etfTheme';
+import { getSentimentTone, type SentimentTone } from './sentimentLabel';
 
 export type RiskBucket = 'very_low' | 'low' | 'medium' | 'high' | 'very_high';
 export type CostBucket = 'low' | 'medium' | 'high';
@@ -11,11 +12,14 @@ export type ReturnPeriodKey = 'return_1w' | 'return_1m' | 'return_1q' | 'return_
 export type LeverageMode = 'any' | 'exclude' | 'only';
 export type LeverageToggle = boolean | null;
 
+export type { SentimentTone };
+
 export interface ActiveFilters {
   returnPeriod: ReturnPeriodKey;
   returnMin: number | null;
   categories: Set<string>;
   issuers: Set<string>;
+  sentimentTones: Set<SentimentTone>;
   msStars: Set<1 | 2 | 3 | 4 | 5>;
   currencies: Set<string>;
   showLeveraged: LeverageToggle;
@@ -33,6 +37,7 @@ export function createEmptyFilters(): ActiveFilters {
     returnMin: null,
     categories: new Set(),
     issuers: new Set(),
+    sentimentTones: new Set(),
     msStars: new Set(),
     currencies: new Set(),
     showLeveraged: null,
@@ -50,6 +55,7 @@ export function isFiltersEmpty(f: ActiveFilters): boolean {
     f.returnMin == null &&
     f.categories.size === 0 &&
     f.issuers.size === 0 &&
+    f.sentimentTones.size === 0 &&
     f.msStars.size === 0 &&
     f.currencies.size === 0 &&
     f.showLeveraged == null &&
@@ -67,6 +73,7 @@ export function countActiveGroups(f: ActiveFilters): number {
   if (f.returnMin != null) n++;
   if (f.categories.size) n++;
   if (f.issuers.size) n++;
+  if (f.sentimentTones.size) n++;
   if (f.msStars.size) n++;
   if (f.currencies.size) n++;
   if (f.showLeveraged != null) n++;
@@ -227,6 +234,12 @@ export function applyFilters(etfs: EtfRow[], f: ActiveFilters): EtfRow[] {
     if (f.issuers.size) {
       const issuer = extractIssuer(etf);
       if (!issuer || !f.issuers.has(issuer)) return false;
+    }
+
+    if (f.sentimentTones.size) {
+      const s = etf.sentiment_normalized;
+      if (s == null || !Number.isFinite(s)) return false;
+      if (!f.sentimentTones.has(getSentimentTone(s))) return false;
     }
 
     if (f.msStars.size) {

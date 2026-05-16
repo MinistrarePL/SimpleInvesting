@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, CandlestickChart, LineChart as LineChartIcon, Info, Maximize2, Minimize2, Eye, EyeOff } from 'lucide-react';
+import { X, CandlestickChart, LineChart as LineChartIcon, Info, Maximize2, Eye, EyeOff } from 'lucide-react';
 import Highcharts from 'highcharts/highstock';
 import HighchartsReact from 'highcharts-react-official';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import type { EtfDetail, EtfRow } from '../types/etf';
 import { supabase } from './AuthModal';
 import { getFriendlyCategory } from '../lib/categoryMap';
@@ -11,6 +11,8 @@ import GlossaryText from './GlossaryText';
 import HoverTooltip from './HoverTooltip';
 import { drawerMotionClasses, overlayMotionClasses, SLIDE_PANEL_DURATION_MS } from '../lib/panelMotion';
 import { classifyRisk } from '../lib/etfFilters';
+import { getSentimentTone } from '../lib/sentimentLabel';
+import { toFiniteInt, toFiniteNumber } from '../utils/coerceNumeric';
 
 interface EtfSidePanelProps {
   isOpen: boolean;
@@ -55,6 +57,21 @@ function formatAum(n: number | null | undefined) {
 function fmtPct(n: number | null | undefined, digits = 2) {
   if (n == null || !Number.isFinite(n)) return '—';
   return `${n.toFixed(digits)}%`;
+}
+
+function coalesceSentimentHistory(raw: unknown): { date: string; count: number; normalized: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const out: { date: string; count: number; normalized: number }[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const date = typeof o.date === 'string' ? o.date : '';
+    const count = typeof o.count === 'number' ? o.count : Number(o.count);
+    const normalized = typeof o.normalized === 'number' ? o.normalized : Number(o.normalized);
+    if (!date || !Number.isFinite(count) || !Number.isFinite(normalized)) continue;
+    out.push({ date, count, normalized });
+  }
+  return out;
 }
 
 export default function EtfSidePanel({
@@ -201,6 +218,24 @@ export default function EtfSidePanel({
   }, [row?.ticker, row?.exchange, chartRange, chartInterval]);
 
   const combined: EtfDetail | null = row ? (detail ?? (row as EtfDetail)) : null;
+
+  const sentimentSeries = useMemo(
+    () => coalesceSentimentHistory(combined?.sentiment_history),
+    [combined?.sentiment_history],
+  );
+
+  const sentimentNorm = useMemo(
+    () => toFiniteNumber(combined?.sentiment_normalized),
+    [combined?.sentiment_normalized],
+  );
+  const sentimentArticles = useMemo(
+    () => toFiniteInt(combined?.sentiment_article_count),
+    [combined?.sentiment_article_count],
+  );
+  const sentimentTone = useMemo(
+    () => (sentimentNorm != null ? getSentimentTone(sentimentNorm) : null),
+    [sentimentNorm],
+  );
 
   const riskBucket = useMemo(() => (combined ? classifyRisk(combined) : null), [combined]);
 
@@ -719,11 +754,71 @@ export default function EtfSidePanel({
                 <div className="text-theme-text-muted text-xs">{t('panel.holdingsCount')}</div>
                 <div className="font-medium text-theme-text">{combined!.holdings_count ?? '—'}</div>
               </div>
-              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 sm:col-span-2">
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2">
                 <div className="text-theme-text-muted text-xs">{t('panel.morningstar')}</div>
                 <div className="font-medium text-theme-text flex items-center gap-2">{msStars}</div>
                 {combined!.morningstar_category_benchmark && (
                   <div className="text-xs text-theme-text-muted mt-1">{combined!.morningstar_category_benchmark}</div>
+                )}
+              </div>
+              <div className="rounded-lg border border-theme-border bg-theme-bg px-3 py-2 sm:col-span-2">
+                <div className="text-theme-text-muted text-xs">{t('panel.sentimentTitle')}</div>
+                {sentimentNorm != null && sentimentTone ? (
+                  <>
+                    <div
+                      className={`font-semibold mt-0.5 ${
+                        sentimentTone === 'positive'
+                          ? 'text-theme-return-pos'
+                          : sentimentTone === 'negative'
+                            ? 'text-theme-return-neg'
+                            : 'text-theme-text'
+                      }`}
+                    >
+                      {t(`table.sentimentTone.${sentimentTone}`)}
+                    </div>
+                    <div className="text-xs text-theme-text-muted tabular-nums mt-0.5">
+                      {t('table.sentimentTooltipScore', {
+                        score: (sentimentNorm > 0 ? '+' : '') + sentimentNorm.toFixed(2),
+                      })}
+                    </div>
+                    <div className="text-xs text-theme-text-muted mt-1 space-y-0.5">
+                      {combined!.sentiment_date
+                        ? <p>{t('panel.sentimentAsOf', { date: combined!.sentiment_date })}</p>
+                        : null}
+                      {sentimentArticles != null ? (
+                        <p>{t('panel.sentimentArticles', { count: sentimentArticles })}</p>
+                      ) : null}
+                    </div>
+                  </>
+                ) : (
+                  <div className="font-medium text-theme-text-muted mt-0.5">—</div>
+                )}
+                {sentimentSeries.length >= 2 && (
+                  <p className="text-xs text-theme-text-muted mt-3 mb-1">{t('panel.sentimentHistoryCaption')}</p>
+                )}
+                {sentimentSeries.length >= 2 && (
+                  <div className="h-28 w-full mt-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sentimentSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-theme-border opacity-60" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10 }}
+                          tickFormatter={(d) => (typeof d === 'string' && d.length >= 10 ? d.slice(5) : String(d))}
+                        />
+                        <YAxis domain={[-1, 1]} width={32} tick={{ fontSize: 10 }} />
+                        <RechartsTooltip
+                          formatter={(value: number | string) => {
+                            const n = typeof value === 'number' ? value : Number(value);
+                            return Number.isFinite(n) ? n.toFixed(3) : '';
+                          }}
+                          labelFormatter={(l) => String(l)}
+                          contentStyle={{ fontSize: 12 }}
+                        />
+                        <Line type="monotone" dataKey="normalized" stroke="rgb(20 184 166)" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
               </div>
             </div>
@@ -740,7 +835,7 @@ export default function EtfSidePanel({
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
+                    <RechartsTooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -759,7 +854,7 @@ export default function EtfSidePanel({
                         <Cell key={i} fill={PIE_COLORS[(i + 3) % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
+                    <RechartsTooltip formatter={(value) => (Number.isFinite(Number(value)) ? `${Number(value).toFixed(2)}%` : '')} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

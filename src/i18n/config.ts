@@ -37,6 +37,14 @@ const resources = {
         m1: '1 Miesiąc',
         q1: '1 Kwartał',
         y1: '1 Rok',
+        sentiment: 'Sentyment',
+        sentimentArticles: '{{count}} artykułów (ten dzień)',
+        sentimentTooltipScore: 'Skala nastroju: {{score}}',
+        sentimentTone: {
+          positive: 'Pozytywny',
+          negative: 'Negatywny',
+          neutral: 'Neutralny',
+        },
         noData: 'Brak danych',
         rowsPerPage: 'Wierszy na stronę',
         showingRange: 'Wyświetlanie {{from}}–{{to}} z {{total}}',
@@ -67,6 +75,8 @@ const resources = {
           q1: 'Zmiana ceny ETF w ciągu ostatnich 3 miesięcy (kwartał) wyrażona w procentach.',
           y1:
             'Zmiana ceny ETF w ciągu ostatniego roku wyrażona w procentach. To jeden z najczęściej używanych wskaźników do oceny wyników funduszu.',
+          sentiment:
+            'Jak dziś mówią o tym funduszu media — zestawiamy obraz z nagłówków i komentarzy w jedną, czytelną ocenę: nastrój pozytywny, neutralny lub negatywny. To ułatwia szybki kontekst obok wykresu i danych fundamentalnych, bez zastępowania Twojej własnej decyzji. Wartość odnosi się do ostatniego zaktualizowanego dnia (data w podpowiedzi komórki).',
         },
       },
       search: {
@@ -122,6 +132,10 @@ const resources = {
         issuer: {
           title: 'Emitent',
           info: 'Firma, która tworzy i zarządza funduszem (np. iShares, Vanguard, Xtrackers). Duzi, znani emitenci dają zwykle większą płynność, niższe koszty i mniejsze ryzyko zamknięcia ETF-a.',
+        },
+        sentiment: {
+          title: 'Sentyment',
+          info: 'Pokaż tylko fundusze z wybranym nastrojem w mediach (ostatnia aktualizacja z naszego źródła). Przy aktywnym filtrze pomijamy pozycje bez danych sentymentu.',
         },
         morningstar: {
           title: 'Ocena Morningstar',
@@ -232,6 +246,10 @@ const resources = {
         holdingSector: 'Sektor',
         addToWatchlist: 'Dodaj do watchlisty',
         removeFromWatchlist: 'Usuń z watchlisty',
+        sentimentTitle: 'Nastrój w mediach',
+        sentimentAsOf: 'Dzień danych: {{date}}',
+        sentimentArticles: '{{count}} artykułów w tym dniu',
+        sentimentHistoryCaption: 'Ostatnie dni',
       },
       theme: {
         light: 'Jasny motyw',
@@ -331,6 +349,14 @@ const resources = {
         m1: '1 Month',
         q1: '1 Quarter',
         y1: '1 Year',
+        sentiment: 'Sentiment',
+        sentimentArticles: '{{count}} articles (that day)',
+        sentimentTooltipScore: 'Sentiment score: {{score}}',
+        sentimentTone: {
+          positive: 'Positive',
+          negative: 'Negative',
+          neutral: 'Neutral',
+        },
         noData: 'No data',
         rowsPerPage: 'Rows per page',
         showingRange: 'Showing {{from}}–{{to}} of {{total}}',
@@ -361,6 +387,8 @@ const resources = {
           q1: 'The ETF\'s price change over the last 3 months (quarter), shown as a percentage.',
           y1:
             'The ETF\'s price change over the last year, shown as a percentage. This is one of the most common metrics for evaluating fund performance.',
+          sentiment:
+            'A quick read on how the media frames this fund right now — we boil down headlines and online commentary into a simple label: positive, neutral, or negative tone. It adds context next to your charts and fundamentals; it is not a buy or sell call. The figure reflects the latest updated day (see the cell tooltip for the date).',
         },
       },
       search: {
@@ -415,6 +443,10 @@ const resources = {
         issuer: {
           title: 'Issuer',
           info: 'The company that builds and runs the fund (e.g. iShares, Vanguard, Xtrackers). Big, established issuers typically mean better liquidity, lower costs, and less risk of the fund being closed.',
+        },
+        sentiment: {
+          title: 'Sentiment',
+          info: 'Show only funds with the selected media tone (latest update from our source). While any sentiment option is selected, rows without sentiment data are hidden.',
         },
         morningstar: {
           title: 'Morningstar rating',
@@ -525,6 +557,10 @@ const resources = {
         holdingSector: 'Sector',
         addToWatchlist: 'Add to watchlist',
         removeFromWatchlist: 'Remove from watchlist',
+        sentimentTitle: 'Media tone',
+        sentimentAsOf: 'Data day: {{date}}',
+        sentimentArticles: '{{count}} articles that day',
+        sentimentHistoryCaption: 'Recent days',
       },
       theme: {
         light: 'Light theme',

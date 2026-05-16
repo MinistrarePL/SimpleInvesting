@@ -32,6 +32,8 @@ import { useIsMdBreakpointUp, useShowHoverPortalTooltips } from '../lib/pointerP
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
 import { applyFilters, classifyAum, classifyCost, createEmptyFilters, exposureKeyLabel, type ActiveFilters } from '../lib/etfFilters';
+import { getSentimentTone } from '../lib/sentimentLabel';
+import { toFiniteInt, toFiniteNumber } from '../utils/coerceNumeric';
 
 function removeFromSet<T>(set: Set<T>, value: T): Set<T> {
   const next = new Set(set);
@@ -129,7 +131,8 @@ type SortKey =
   | 'return_1w'
   | 'return_1m'
   | 'return_1q'
-  | 'return_1y';
+  | 'return_1y'
+  | 'sentiment';
 type SortDir = 'asc' | 'desc';
 
 /** Klucze mapujące na `table.*` i `table.info.*` w i18n */
@@ -143,7 +146,8 @@ type TableInfoColumnKey =
   | 'w1'
   | 'm1'
   | 'q1'
-  | 'y1';
+  | 'y1'
+  | 'sentiment';
 
 const PAGE_SIZE_OPTIONS = [20, 50, 100, 200] as const;
 type PageSizeOption = (typeof PAGE_SIZE_OPTIONS)[number];
@@ -186,7 +190,10 @@ interface DashboardProps {
 
 export default function Dashboard({ initialEtfs }: DashboardProps) {
   const { t, i18n } = useTranslation();
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  /* Zgodnie ze skryptem inline w Layout: pierwszy render musi użyć tego samego motywu co klasa na <html>. */
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+  );
   const [viewportGridDensity, setViewportGridDensity] = useState<GridDensity>(() =>
     typeof window !== 'undefined' &&
     window.matchMedia(`(min-width: ${GRID_COMFORT_MIN_WIDTH_PX}px)`).matches
@@ -399,6 +406,9 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       } else if (sortKey === 'currency') {
         valA = (a.currency || '').toLowerCase();
         valB = (b.currency || '').toLowerCase();
+      } else if (sortKey === 'sentiment') {
+        valA = toFiniteNumber(a.sentiment_normalized);
+        valB = toFiniteNumber(b.sentiment_normalized);
       } else {
         valA = a[sortKey] as number | null;
         valB = b[sortKey] as number | null;
@@ -457,6 +467,14 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
         key: `issuer:${issuer}`,
         label: `${t('filters.issuer.title')}: ${issuer}`,
         onRemove: () => setFilters((f) => ({ ...f, issuers: removeFromSet(f.issuers, issuer) })),
+      });
+    }
+
+    for (const tone of filters.sentimentTones) {
+      out.push({
+        key: `sent:${tone}`,
+        label: `${t('filters.sentiment.title')}: ${t(`table.sentimentTone.${tone}`)}`,
+        onRemove: () => setFilters((f) => ({ ...f, sentimentTones: removeFromSet(f.sentimentTones, tone) })),
       });
     }
 
@@ -761,6 +779,31 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
       <span className={`font-medium ${colorClass}`}>
         {val > 0 ? '+' : ''}{val}%
       </span>
+    );
+  };
+
+  const renderSentimentCell = (etf: EtfRow) => {
+    const v = toFiniteNumber(etf.sentiment_normalized);
+    if (v == null) {
+      return <span className="text-theme-text-muted">—</span>;
+    }
+    const tone = getSentimentTone(v);
+    const colorClass =
+      tone === 'positive' ? 'text-theme-return-pos' : tone === 'negative' ? 'text-theme-return-neg' : 'text-theme-text';
+    const label = t(`table.sentimentTone.${tone}`);
+    const tipParts: string[] = [];
+    tipParts.push(t('table.sentimentTooltipScore', { score: (v > 0 ? '+' : '') + v.toFixed(2) }));
+    if (etf.sentiment_date) tipParts.push(etf.sentiment_date);
+    const art = toFiniteInt(etf.sentiment_article_count);
+    if (art != null) {
+      tipParts.push(t('table.sentimentArticles', { count: art }));
+    }
+    const tooltip = tipParts.join(' · ');
+    const inner = <span className={`font-medium ${colorClass}`}>{label}</span>;
+    return (
+      <PreciseHoverTip tooltip={tooltip} className="inline-flex w-full min-w-0 cursor-default justify-end">
+        {inner}
+      </PreciseHoverTip>
     );
   };
 
@@ -1110,7 +1153,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
             onScroll={onBottomTableHScroll}
             className="overflow-x-auto scrollbar-x-hide table-h-scroll-touch"
           >
-            <table className="w-full text-left border-collapse min-w-[1100px]">
+            <table className="w-full text-left border-collapse min-w-[1180px]">
               <thead>
                 <tr className="border-b border-theme-border">
                   <th
@@ -1174,16 +1217,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                     </span>
                   </th>
                   <th
-                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
-                    onClick={() => handleSort('currency')}
-                  >
-                    <span className={`inline-flex items-center ${gx.hdrGap}`}>
-                      {t('table.currency')}
-                      <SortIcon column="currency" />
-                      <ColumnInfoBtn col="currency" />
-                    </span>
-                  </th>
-                  <th
                     className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thNarrow}`}
                     onClick={() => handleSort('total_assets')}
                   >
@@ -1201,6 +1234,16 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       {t('table.ter')}
                       <SortIcon column="expense_ratio" />
                       <ColumnInfoBtn col="ter" />
+                    </span>
+                  </th>
+                  <th
+                    className={`bg-theme-surface shadow-[0_1px_0_0_var(--color-theme-border)] font-semibold text-theme-text-muted uppercase whitespace-nowrap text-right cursor-pointer select-none hover:text-theme-text transition-colors ${gx.thWide}`}
+                    onClick={() => handleSort('sentiment')}
+                  >
+                    <span className={`inline-flex items-center justify-end ${gx.hdrGap}`}>
+                      {t('table.sentiment')}
+                      <SortIcon column="sentiment" />
+                      <ColumnInfoBtn col="sentiment" />
                     </span>
                   </th>
                   <th
@@ -1251,7 +1294,6 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                       <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1m)}</td>
                       <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1q)}</td>
                       <td className={`${gx.tdWide} text-right`}>{renderReturn(etf.return_1y)}</td>
-                      <td className={gx.tdCurrency}>{etf.currency || '—'}</td>
                       <td className={gx.tdAumTer}>
                         <PreciseHoverTip
                           tooltip={
@@ -1294,6 +1336,7 @@ export default function Dashboard({ initialEtfs }: DashboardProps) {
                           })()}
                         </PreciseHoverTip>
                       </td>
+                      <td className={`${gx.tdWide} text-right`}>{renderSentimentCell(etf)}</td>
                       <td className={gx.tdStars}>{renderStars(etf.morningstar_rating ?? null)}</td>
                     </tr>
                   ))

@@ -33,6 +33,12 @@ export interface EtfRow {
   return_1m: number | null;
   return_1q: number | null;
   return_1y: number | null;
+  /** Dzienny sentyment z EODHD (−1…1), data w `sentiment_date` */
+  sentiment_normalized?: number | null;
+  sentiment_article_count?: number | null;
+  sentiment_date?: string | null;
+  /** Ostatnie dni dla mini-wykresu w panelu */
+  sentiment_history?: { date: string; count: number; normalized: number }[] | null;
   last_updated: string;
   fundamentals_updated?: string | null;
 }

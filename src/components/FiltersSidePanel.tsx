@@ -6,6 +6,7 @@ import { drawerMotionClasses, overlayMotionClasses } from '../lib/panelMotion';
 import { useIsMdBreakpointUp } from '../lib/pointerPreference';
 import type { EtfRow } from '../types/etf';
 import { getFriendlyCategory } from '../lib/categoryMap';
+import { SENTIMENT_TONES } from '../lib/sentimentLabel';
 import {
   AGE_BUCKETS,
   AUM_BUCKETS,
@@ -176,6 +177,19 @@ export default function FiltersSidePanel({ isOpen, onClose, filters, onChange, e
             onToggle={(v) => patch({ issuers: toggleInSet(filters.issuers, v) })}
             searchPlaceholder={t('filters.searchIn')}
           />
+
+          <FilterGroup title={t('filters.sentiment.title')} badge={filters.sentimentTones.size || null} info={t('filters.sentiment.info')}>
+            <div className="flex flex-wrap gap-2">
+              {SENTIMENT_TONES.map((tone) => (
+                <Chip
+                  key={tone}
+                  active={filters.sentimentTones.has(tone)}
+                  onClick={() => patch({ sentimentTones: toggleInSet(filters.sentimentTones, tone) })}
+                  label={t(`table.sentimentTone.${tone}`)}
+                />
+              ))}
+            </div>
+          </FilterGroup>
 
           {/* 5. Morningstar */}
           <FilterGroup title={t('filters.morningstar.title')} badge={filters.msStars.size || null} info={t('filters.morningstar.info')}>
