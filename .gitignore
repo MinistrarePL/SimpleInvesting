@@ -28,3 +28,6 @@ data/etf-universe.json
 
 # Local Netlify folder
 .netlify
+
+# Wygenerowany indeks z PDF (npm run extract:knowledge)
+knowledge_base/.generated/

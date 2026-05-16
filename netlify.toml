@@ -1,0 +1,4 @@
+# Build uruchamia `prebuild` → ekstrakcja PDF + zapis do Supabase (`SUPABASE_SERVICE_ROLE_KEY`).
+# Nie ustawiaj w panelu samego `astro build`, bo wtedy brak sync chunków do DB.
+[build]
+  command = "npm run build"
